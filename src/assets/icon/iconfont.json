@@ -1,0 +1,44 @@
+{
+  "id": "3967951",
+  "name": "graduation",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "10678418",
+      "name": "info",
+      "font_class": "info",
+      "unicode": "e6de",
+      "unicode_decimal": 59102
+    },
+    {
+      "icon_id": "15838551",
+      "name": "warning",
+      "font_class": "warning",
+      "unicode": "e683",
+      "unicode_decimal": 59011
+    },
+    {
+      "icon_id": "17412149",
+      "name": "Data Line",
+      "font_class": "DataLine",
+      "unicode": "e660",
+      "unicode_decimal": 58976
+    },
+    {
+      "icon_id": "15838547",
+      "name": "user",
+      "font_class": "user",
+      "unicode": "e682",
+      "unicode_decimal": 59010
+    },
+    {
+      "icon_id": "24342452",
+      "name": "statistical view Combination of figure-line",
+      "font_class": "a-statisticalviewCombinationoffigure-line",
+      "unicode": "ea29",
+      "unicode_decimal": 59945
+    }
+  ]
+}
