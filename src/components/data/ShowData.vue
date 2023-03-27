@@ -24,14 +24,36 @@
       </div>
     </div>
     <div class="main-main">
-      <el-table :data="tableData" style="width: 100%;height: 100%;" >
+      <el-table v-loading="sourceDataLoading" :data="tableData" style="width: 100%;height: 100%;" >
         <el-table-column fixed prop="userAccount" label="账号" width="200"  align="center" />
         <el-table-column prop="name" label="姓名" width="200" align="center"/>
         <el-table-column prop="collectTime" label="录入时间" width="250" align="center"/>
         <el-table-column prop="sourceData" label="数据详情" width="200" align="center">
-          <template #default="scope">
-            <el-button @click="showDataInfo(scope.$index, scope.row)">点击查看</el-button>
-          </template>
+<!--          <template #default="scope">-->
+<!--            <el-button @click="showDataInfo(scope.$index, scope.row)">点击查看</el-button>-->
+<!--          </template>-->
+
+              <template #default="scope">
+                <el-popover placement="right" :width="400" :height="400" trigger="click">
+                  <template #reference>
+                    <el-button style="margin-right: 16px" @click="showDataInfo(scope.$index, scope.row)">点击查看数据详情</el-button>
+                  </template>
+                  <el-table :data="chartDataValue" v-loading="dataInfoLoading">
+                    <el-table-column v-for="(item,i) in chartDataName"
+                                     :key = "item.id"
+                                     width="auto" :label="item.tableTitle" >
+                      <template #default="scope" >
+                        <div @click="test(scope.$index, scope.row)">
+                          {{ scope.row[i] }}
+                        </div>
+
+                      </template>
+
+                    </el-table-column>
+<!--                    <el-table-column  prop="dataValue" label="数据" />-->
+                  </el-table>
+                </el-popover>
+              </template>
         </el-table-column>
         <el-table-column prop="dataState" label="数据状态" width="200" align="center"/>
         <el-table-column fixed="right" label="Operations" width="400" align="center">
@@ -47,7 +69,7 @@
             v-model:currentPage="currentPage"
             v-model:pageSize="pageSize"
             :page-sizes="[10, 20, 30, 40 , 50]"
-            :disabled="disabled"
+            :disabled="false"
             :background = true
             layout="total, sizes, prev, pager, next, jumper"
             :total="total"
@@ -69,11 +91,12 @@ import {onMounted, reactive} from "vue";
 const dataImport = () => {
   message.sucess("点击了数据导入")
 }
+
+//模糊查询输入框
 const input = ref()
-const currentPage = ref()
-const pageSize = ref()
-const disabled = ref(false)
+//日期选择器
 const dateValue = ref()
+//自定义便捷时间选择
 const shortcuts = [
   {
     text: '今天',
@@ -121,12 +144,12 @@ const shortcuts = [
   },
 ]
 
-const dataInfo = ref(false)
-// const deleteRow = (index) => {
-//   tableData.value.splice(index, 1)
-// }
+//当前页面
+const currentPage = ref()
+//每页数据条数
+const pageSize = ref()
+//查询数据总数
 const total = ref(0)
-const tableData = ref()
 
 const handleSizeChange = (val) => {
   console.log("每页大小改变了")
@@ -137,31 +160,84 @@ const handleCurrentChange = (val) => {
   message.sucess(val)
 }
 
+
+// const deleteRow = (index) => {
+//   tableData.value.splice(index, 1)
+// }
+//页面表格数据
+const tableData = ref()
+
+//数据详情查看的列名（数据名）
+const chartDataName = ref()
+//数据详情查看的数据（数据）
+const chartDataValue = ref([])
+
+// const chartDataValue = ref(
+// [    [1,1,1,1],
+//     [2,2,2,1],
+//     [3,3,3,2],
+//     [4,4,4,2],
+//     [5,5,5,3],
+//     [6,6,6,3],
+//     [7,7,7,4],
+//     [8,8,8,4],
+//     [9,9,9,5],
+//     [10,10,10,5],]
+// )
+
+// 页面表格数据加载动画
+const sourceDataLoading = ref(true)
+
+// 数据详情表格数据加载动画
+const dataInfoLoading = ref(false)
+
+//点击“查看数据详情”按钮的响应事件
+/**
+ * 访问后端接口，获取sourceData对应的数据ChartData并渲染到表格中
+ */
 const showDataInfo = (index,row) => {
+  chartDataValue.value= null
+  chartDataName.value = null
+  dataInfoLoading.value = true
   /**
    *需要传Object类型，将其转化为对象
    */
   let data = {sourceData:row.sourceData}
   api.getChartDataInfoApi(data).then( res =>{
     if (res.success){
-      message.sucess("getChartDataInfoApi")
-      console.log(res.data)
+      let tableTile =reactive([])
+      let valueArray = []
+      for (let i =0;i < res.data.length;i++){
+        let titleObject = {prop:i,tableTitle:res.data[i].dataName}
+        tableTile.push(titleObject)
+        let valueObject = res.data[i].dataValue
+        valueArray.push(valueObject)
+      }
+      let chartdata = []
+      for (let j =0;j<valueArray.length;j++){
+        while (valueArray[j].length !== 0){
+          let ceshi =[]
+          for (let i = 0;i<valueArray.length;i++){
+            let value = valueArray[i][0] === null?'':valueArray[i].shift()
+            ceshi.push(value)
+          }
+          chartdata.push(ceshi)
+        }
+      }
+      chartDataValue.value = chartdata
+      chartDataName.value = tableTile
+      dataInfoLoading.value = false
     }
   }).catch(error =>{
     console.log(error)
   })
-
-  // console.log(index,row)
-  // console.log(row.sourceData)
-
 }
 
 const getSourceData = () => {
   api.getSourceDataApi().then( res =>{
-    console.log(res.data)
     if (res.success){
-      message.sucess("sourceData")
       tableData.value = res.data
+      sourceDataLoading.value = false
     }
   }).catch(error =>{
     console.log(error)
