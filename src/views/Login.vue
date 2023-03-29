@@ -11,9 +11,9 @@
         </div>
       </div>
       <!-- 注册盒子 -->
-      <div class="register-form">
+      <div class="register-form" v-loading="registerLoading">
         <!-- 标题盒子 -->
-        <div class="title-box">
+        <div class="title-box" >
           <h1>注册</h1>
         </div>
         <!-- 输入框盒子 -->
@@ -36,9 +36,9 @@
         </div>
       </div>
       <!-- 登录盒子 -->
-      <div class="login-form">
+      <div class="login-form" v-loading="loginLoading">
         <!-- 标题盒子 -->
-        <div class="title-box">
+        <div class="title-box" >
           <h1>登录</h1>
         </div>
         <!-- 输入框盒子 -->
@@ -135,12 +135,16 @@ function validatePass(rule, value, callback){
 
 const router = useRouter()
 
+const loginLoading = ref(false)
+
 const login = ()=>{
+  loginLoading.value = true
   loginFormRef.value.validate((valid)=>{
     if (!valid){
       return;
     }
     api.loginApi(loginForm).then( res=>{
+      loginLoading.value = false
       if (res.success){
         message.sucess("登陆成功")
         window.sessionStorage.setItem('token',res.data)
@@ -153,12 +157,16 @@ const login = ()=>{
   })
 }
 
+const registerLoading = ref(false)
+
 const register =()=>{
+  registerLoading.value = true
   registerFormRef.value.validate((valid)=>{
     if (!valid){
       return;
     }
     api.registerApi(registerForm).then( res=>{
+      registerLoading.value = false
       if (res.success){
         message.sucess("注册成功")
       }

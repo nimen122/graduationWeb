@@ -1,4 +1,5 @@
 import dataSource from './request.js';
+import qs from "qs";
 
 const getSourceDataApi = (data) =>{
     return dataSource.post({
@@ -14,7 +15,15 @@ const getChartDataInfoApi = (data) =>{
     })
 }
 
+const addSourceDataApi = (data) =>{
+    return dataSource.post({
+        url:'/Source/addSource',
+        data
+    })
+}
+
 export default {
     getSourceDataApi,
     getChartDataInfoApi,
+    addSourceDataApi,
 }

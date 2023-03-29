@@ -1,7 +1,8 @@
 <template>
   <div class="data-main">
     <div class="main-t">
-      <el-button class="upload-btn"  type="success" size="default" @click="dataImport">上传数据</el-button>
+      <DataImportForm></DataImportForm>
+<!--      <el-button class="upload-btn"  type="success" size="default" @click="dataImport">上传数据</el-button>-->
       <el-input
           v-model="input"
           class="input"
@@ -26,7 +27,7 @@
     <div class="main-main">
       <el-table v-loading="sourceDataLoading" :data="tableData" style="width: 100%;height: 100%;" >
         <el-table-column fixed prop="userAccount" label="账号" width="200"  align="center" />
-        <el-table-column prop="name" label="姓名" width="200" align="center"/>
+        <el-table-column prop="userName" label="姓名" width="200" align="center"/>
         <el-table-column prop="collectTime" label="录入时间" width="250" align="center"/>
         <el-table-column prop="sourceData" label="数据详情" width="200" align="center">
 <!--          <template #default="scope">-->
@@ -34,25 +35,31 @@
 <!--          </template>-->
 
               <template #default="scope">
-                <el-popover placement="right" :width="400" :height="400" trigger="click">
-                  <template #reference>
-                    <el-button style="margin-right: 16px" @click="showDataInfo(scope.$index, scope.row)">点击查看数据详情</el-button>
-                  </template>
-                  <el-table :data="chartDataValue" v-loading="dataInfoLoading">
-                    <el-table-column v-for="(item,i) in chartDataName"
-                                     :key = "item.id"
-                                     width="auto" :label="item.tableTitle" >
-                      <template #default="scope" >
-                        <div @click="test(scope.$index, scope.row)">
-                          {{ scope.row[i] }}
-                        </div>
 
-                      </template>
+                  <el-popover placement="right" :width="400" trigger="click">
+                    <template #reference>
+                      <el-button style="margin-right: 16px" @click="showDataInfo(scope.$index, scope.row)">点击查看数据详情</el-button>
+                    </template>
+                      <div v-loading="dataInfoLoading">
+                        <el-table :data="chartDataValue" max-height="400">
+                          <el-table-column v-for="(item,i) in chartDataName"
+                                           :key = "item.id"
+                                           width="auto" :label="item.tableTitle"
 
-                    </el-table-column>
-<!--                    <el-table-column  prop="dataValue" label="数据" />-->
-                  </el-table>
-                </el-popover>
+                          >
+                            <template #default="scope" >
+                              <div>
+                                {{ scope.row[i] }}
+                              </div>
+
+                            </template>
+
+                          </el-table-column>
+                          <!--                    <el-table-column  prop="dataValue" label="数据" />-->
+                        </el-table>
+                      </div>
+                  </el-popover>
+
               </template>
         </el-table-column>
         <el-table-column prop="dataState" label="数据状态" width="200" align="center"/>
@@ -87,10 +94,8 @@ import message from "../../utils/Message.js";
 import {Search } from '@element-plus/icons-vue'
 import api from '@/api/dataSource.js'
 import {onMounted, reactive} from "vue";
+import DataImportForm from "./DataImportForm.vue";
 
-const dataImport = () => {
-  message.sucess("点击了数据导入")
-}
 
 //模糊查询输入框
 const input = ref()
@@ -189,7 +194,7 @@ const chartDataValue = ref([])
 const sourceDataLoading = ref(true)
 
 // 数据详情表格数据加载动画
-const dataInfoLoading = ref(false)
+const dataInfoLoading = ref()
 
 //点击“查看数据详情”按钮的响应事件
 /**
@@ -203,7 +208,9 @@ const showDataInfo = (index,row) => {
    *需要传Object类型，将其转化为对象
    */
   let data = {sourceData:row.sourceData}
+  console.log(data)
   api.getChartDataInfoApi(data).then( res =>{
+    dataInfoLoading.value = false
     if (res.success){
       let tableTile =reactive([])
       let valueArray = []
@@ -226,7 +233,7 @@ const showDataInfo = (index,row) => {
       }
       chartDataValue.value = chartdata
       chartDataName.value = tableTile
-      dataInfoLoading.value = false
+
     }
   }).catch(error =>{
     console.log(error)
@@ -268,14 +275,10 @@ onMounted(()=>{
   align-items: center;
 
 }
-.upload-btn{
-  size: 30px;
-  margin-left: 5%;
 
-}
 .input{
   width: 15%;
-  margin-left: 30px;
+  margin-left: 50px;
 }
 .demo-date-picker {
   display: flex;

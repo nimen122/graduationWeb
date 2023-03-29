@@ -6,6 +6,27 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "5924739",
+      "name": "chart-4",
+      "font_class": "chart-",
+      "unicode": "e61b",
+      "unicode_decimal": 58907
+    },
+    {
+      "icon_id": "7821146",
+      "name": "chart",
+      "font_class": "chart",
+      "unicode": "e631",
+      "unicode_decimal": 58929
+    },
+    {
+      "icon_id": "20112350",
+      "name": "bx-bar-chart-square",
+      "font_class": "bx-bar-chart-square",
+      "unicode": "e623",
+      "unicode_decimal": 58915
+    },
+    {
       "icon_id": "10678418",
       "name": "info",
       "font_class": "info",

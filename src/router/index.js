@@ -19,7 +19,12 @@ const routes = [
         name: 'DataImport',
         path: '/dataImport',
         component: () => import('../views/DataImport.vue'),
-    }
+    },
+    {
+        name: 'SPCChart',
+        path: '/SPCChart',
+        component: () => import('../views/SPCChart.vue'),
+    },
 ];
 
 //这里不是通过new来创建，通过createRouter 方法创建，使用的模式不是通过mode来定义

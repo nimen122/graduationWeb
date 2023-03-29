@@ -1,7 +1,7 @@
 <template>
   <div class="home">
-    <div class="home-main">
-      <div class="main-t">
+    <div class="home-main" >
+      <div class="main-t" v-loading="showTodayLoading">
         <div class="show-card">
           <div class="card-t"></div>
           <div class="card-bm">
@@ -56,7 +56,7 @@
           <div id="pieChart1" style="width: 100%;height: 100%"></div>
         </div>
       </div>
-      <div class="main-b">
+      <div class="main-b" v-loading="showHistoryLoading">
           <div class="barChart">
             <div id="barChart1" style="width: 100%;height: 100%"></div>
           </div>
@@ -128,10 +128,11 @@ const barOption2 ={
   ]
 }
 
+const showTodayLoading = ref(true)
 
 const todayData = () => {
   api.todayApi().then( res=>{
-    // console.log(res.data)
+    showTodayLoading.value = false
     if (res.success){
       todaySource.value=[
           ['今日录入数据',res.data.statisticalImportData],
@@ -140,16 +141,17 @@ const todayData = () => {
       statisticalData.todayImport = res.data.statisticalImportData;
       statisticalData.todayError = res.data.statisticalErrorData
       PieChartChange1()
+
     }
   } ).catch(error =>{
     console.log(error)
   })
 }
-
+const showHistoryLoading = ref(true)
 let barChartSource1 = ref();
 const historyData = () => {
   api.historyApi().then( res=>{
-    // console.log(res.data)
+    showHistoryLoading.value = false
     if (res.success){
       // message.sucess("ww")
       historySource.value=[
@@ -161,6 +163,7 @@ const historyData = () => {
       PieChartChange2();
       barChartChange1();
       barChartChange2();
+
     }
   } ).catch(error =>{
     console.log(error)
