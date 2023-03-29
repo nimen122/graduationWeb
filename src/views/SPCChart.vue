@@ -63,6 +63,7 @@ const dragContent=()=> {
         let moveLen = resize[i].top + (endY - startY) // （endY - startY）=移动的距离。resize[i].top+移动的距离=上边区域最后的高度
         let maxT = box[i].clientHeight - resize[i].offsetHeight // 容器高度 - 上边区域的高度 = 下边区域的高度
 
+
         // if (moveLen < 50) moveLen = 50 // 上边区域的最小高度为50px
         // if (moveLen > maxT - 150) moveLen = maxT - 150 //下边区域最小高度为150px
 
