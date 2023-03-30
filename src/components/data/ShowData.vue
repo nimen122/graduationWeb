@@ -43,7 +43,7 @@
                       <div v-loading="dataInfoLoading">
                         <el-table :data="chartDataValue" max-height="400">
                           <el-table-column v-for="(item,i) in chartDataName"
-                                           :key = "item.id"
+                                           :key = "i"
                                            width="auto" :label="item.tableTitle"
 
                           >
@@ -65,7 +65,7 @@
         <el-table-column prop="dataState" label="数据状态" width="200" align="center"/>
         <el-table-column fixed="right" label="Operations" width="400" align="center">
           <template #default="scope">
-            <el-button>上报异常</el-button>
+            <el-button @click="toChart(scope.$index, scope.row)">绘制控制图</el-button>
             <el-button>上报异常</el-button>
             <el-button>上报异常</el-button>
           </template>
@@ -93,8 +93,13 @@
 import message from "../../utils/Message.js";
 import {Search } from '@element-plus/icons-vue'
 import api from '@/api/dataSource.js'
-import {onMounted, reactive} from "vue";
+import {onMounted, reactive, ref} from "vue";
 import DataImportForm from "./DataImportForm.vue";
+import { storeToRefs } from 'pinia'
+import { toSPC } from "@/store/toSPC.js";
+
+const router = useRouter()
+const toSPCStore = toSPC();
 
 
 //模糊查询输入框
@@ -208,32 +213,42 @@ const showDataInfo = (index,row) => {
    *需要传Object类型，将其转化为对象
    */
   let data = {sourceData:row.sourceData}
-  console.log(data)
+  // console.log(data)
   api.getChartDataInfoApi(data).then( res =>{
     dataInfoLoading.value = false
     if (res.success){
       let tableTile =reactive([])
       let valueArray = []
+      let title = []
       for (let i =0;i < res.data.length;i++){
         let titleObject = {prop:i,tableTitle:res.data[i].dataName}
         tableTile.push(titleObject)
+        title.push(res.data[i].dataName)
         let valueObject = res.data[i].dataValue
+        // console.log(valueObject)
         valueArray.push(valueObject)
       }
+      // console.log(valueArray)
       let chartdata = []
+      const tableData = ref([])
+      tableData.value.push(title)
+
+
       for (let j =0;j<valueArray.length;j++){
         while (valueArray[j].length !== 0){
           let ceshi =[]
           for (let i = 0;i<valueArray.length;i++){
-            let value = valueArray[i][0] === null?'':valueArray[i].shift()
+            let value = valueArray[i].length === 0?null:valueArray[i].shift()
             ceshi.push(value)
           }
           chartdata.push(ceshi)
+          tableData.value.push(ceshi)
         }
       }
       chartDataValue.value = chartdata
       chartDataName.value = tableTile
 
+      // console.log(tableData.value[0][2])
     }
   }).catch(error =>{
     console.log(error)
@@ -245,6 +260,45 @@ const getSourceData = () => {
     if (res.success){
       tableData.value = res.data
       sourceDataLoading.value = false
+    }
+  }).catch(error =>{
+    console.log(error)
+  })
+}
+
+const toChart = (index,row) =>{
+  let data = {sourceData:row.sourceData}
+  api.getChartDataInfoApi(data).then( res =>{
+    if (res.success){
+      const tableData = ref([])
+      let valueArray = []
+      let title = []
+      for (let i =0;i < res.data.length;i++){
+        title.push(res.data[i].dataName)
+        let valueObject = res.data[i].dataValue
+        valueArray.push(valueObject)
+      }
+      tableData.value.push(title)
+      for (let j =0;j<valueArray.length;j++){
+        while (valueArray[j].length !== 0){
+          let ceshi =[]
+          for (let i = 0;i<valueArray.length;i++){
+            let value = valueArray[i].length === 0?null:valueArray[i].shift()
+            ceshi.push(value)
+          }
+          tableData.value.push(ceshi)
+        }
+      }
+      // let { tableData } = storeToRefs(store);
+      // oldTableData.push(tableData.value)
+      console.log(tableData.value)
+      toSPCStore.$patch(state=>{
+        state.tableData.push(tableData.value)
+      })
+
+      console.log("toSPCStore")
+      console.log(toSPCStore.tableData) //结果：响应式的二维数组
+      router.push('/SPCChart')
     }
   }).catch(error =>{
     console.log(error)

@@ -275,7 +275,7 @@ const visible =reactive({
 })
 
 const isShowText = ref (true)
-const isCollapse = ref(false)
+let isCollapse = ref(false)
 
 </script>
 

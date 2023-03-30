@@ -64,8 +64,8 @@ const dragContent=()=> {
         let maxT = box[i].clientHeight - resize[i].offsetHeight // 容器高度 - 上边区域的高度 = 下边区域的高度
 
 
-        // if (moveLen < 50) moveLen = 50 // 上边区域的最小高度为50px
-        // if (moveLen > maxT - 150) moveLen = maxT - 150 //下边区域最小高度为150px
+        if (moveLen < 50) moveLen = 50 // 上边区域的最小高度为50px
+        if (moveLen > maxT - 50) moveLen = maxT - 50 //下边区域最小高度为150px
 
         resize[i].style.top = moveLen// 设置上边区域的高度
 
@@ -100,22 +100,22 @@ onMounted(()=>{
   height: 89.5vh;
   background: white;
   display: flex;
+  .resizable-container{
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
 
+  }
 }
 .move:hover {
   color: rgb(252,250,237);
 }
-.resizable-container{
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
 
-}
 .my-box{
   width: 100%;
   height: 100%;
-  position: absolute;
+  position: relative;
 
 }
 .main-t{

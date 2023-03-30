@@ -153,6 +153,8 @@ const login = ()=>{
       console.log('login',res)
     }).catch(error =>{
       console.log(error)
+      loginLoading.value = false
+      message.error("请求超时，请重试")
     })
   })
 }

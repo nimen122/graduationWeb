@@ -20,13 +20,14 @@
 <script setup>
 import { HotTable } from '@handsontable/vue3';
 import { ContextMenu,DropdownMenu } from 'handsontable/plugins';
+import { TextEditor } from 'handsontable/editors/textEditor';
 import { registerAllModules } from 'handsontable/registry';
+import Key from '@/utils/GenerateLicenseKey.js'
 import 'handsontable/dist/handsontable.full.css';
 import 'handsontable/languages/zh-CN'; //汉语包
+
 import api from '@/api/dataSource.js'
-import Key from '@/utils/GenerateLicenseKey.js'
 import {reactive, ref} from "vue";
-import { TextEditor } from 'handsontable/editors/textEditor';
 import message from "../../utils/Message.js";
 import qs from "qs";
 registerAllModules();
