@@ -27,7 +27,7 @@
               <template #content>
                 <span>在子组中具有连续数据时，监视过程的均值和变异（极差）。<br />在子组大小为8或更小时效果最佳。</span>
               </template>
-              <span @mouseenter="visible.XbarRVisible = true" @mouseleave="visible.XbarRVisible = false">
+              <span @mouseenter="visible.XbarRVisible = true" @mouseleave="visible.XbarRVisible = false" @click="XbarRDialog = true">
                 Xbar-R控制图
               </span>
             </el-tooltip>
@@ -41,7 +41,7 @@
               <template #content>
                 <span>在子组中具有连续数据时，监视您的过程的均值和变异（标准差）。</span>
               </template>
-              <span @mouseenter="visible.XbarSVisible = true" @mouseleave="visible.XbarSVisible = false">
+              <span @mouseenter="visible.XbarSVisible = true" @mouseleave="visible.XbarSVisible = false" @click="XbarSDialog = true">
               Xbar-S控制图
             </span>
             </el-tooltip>
@@ -56,7 +56,7 @@
               <template #content>
                 <span>在子组中具有连续数据时，监视过程的均值。</span>
               </template>
-              <span @mouseenter="visible.XbarVisible = true" @mouseleave="visible.XbarVisible = false">
+              <span @mouseenter="visible.XbarVisible = true" @mouseleave="visible.XbarVisible = false" @click="XbarDialog = true">
               Xbar控制图
             </span>
             </el-tooltip>
@@ -70,7 +70,7 @@
               <template #content>
                 <span>在子组中具有连续数据时，监视过程的变异（极差）。<br />在子组大小为8或更小时效果最佳。</span>
               </template>
-              <span @mouseenter="visible.RVisible = true" @mouseleave="visible.RVisible = false">
+              <span @mouseenter="visible.RVisible = true" @mouseleave="visible.RVisible = false" @click="RDialog = true">
               R控制图
             </span>
             </el-tooltip>
@@ -84,7 +84,7 @@
               <template #content>
                 <span>在子组中具有连续数据时，监视过程的变异（标准差）。<br />在子组大小为8或更小时效果最佳。</span>
               </template>
-              <span @mouseenter="visible.SVisible = true" @mouseleave="visible.SVisible = false">
+              <span @mouseenter="visible.SVisible = true" @mouseleave="visible.SVisible = false" @click="SDialog = true">
               S控制图
             </span>
             </el-tooltip>
@@ -250,12 +250,17 @@
     </el-scrollbar>
 
   </el-aside>
+  <Dialog></Dialog>
+
 </template>
 
 <script setup>
 import {reactive, ref} from "vue";
-
+import { XbarRDialog,XbarSDialog,XbarDialog,RDialog,SDialog } from "./isShowDialog.js"
 import {ArrowLeftBold, ArrowRightBold} from '@element-plus/icons-vue'
+import Dialog from "./Dialog.vue";
+import { table } from "@/store/table.js";
+import emitter from "../../plugins/Bus.js";
 const visible =reactive({
   XbarRVisible:false,
   XbarSVisible:false,
@@ -273,9 +278,14 @@ const visible =reactive({
   LaneyUVisible:false,
   CVisible:false,
 })
-
-const isShowText = ref (true)
+const tableStore = table();
 let isCollapse = ref(false)
+
+// const XbarR = () => {
+//   XbarRDialog.value = true
+//   const tableData = tableStore.tableData
+//   emitter.emit('tableData',tableData);
+// }
 
 </script>
 

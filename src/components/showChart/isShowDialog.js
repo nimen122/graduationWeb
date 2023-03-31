@@ -1,0 +1,5 @@
+export const XbarRDialog = ref(false)
+export const XbarSDialog = ref(false)
+export const XbarDialog = ref(false)
+export const RDialog = ref(false)
+export const SDialog = ref(false)
