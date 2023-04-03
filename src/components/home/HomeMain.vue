@@ -74,7 +74,6 @@
 <script setup>
 import {inject, onMounted, reactive, ref, watch} from "vue";
 import message from "../../utils/Message.js";
-import MyChart from "./MyChart.vue";
 let echarts = inject("echarts")
 import api from '@/api/statistical.js'
 
