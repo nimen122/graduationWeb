@@ -2,27 +2,66 @@
   <div class="show-main">
     <el-scrollbar height="100%">
       <ul class="main-main">
-<!--        <el-button @click="test">按钮</el-button>-->
         <li v-for="(item,index) in chartList" :key="index">
           <div class="box-top">
             <h1 >{{ chartList[index].chartName}}</h1>
+            <div class="toolBox">
+              <el-icon @click="delChartBtn(index)" style="font-size: 20px;margin-left: 10px">
+                <delete />
+              </el-icon>
+            </div>
           </div>
           <div class="box-main" v-if="chartList[index].chartData.length===1">
-            <MyChart :data="chartList[index].chartData[0]"></MyChart>
+            <MyChart :data="chartList[index].chartData[0]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
           </div>
           <div class="box-main" v-else>
             <div class="splitChart">
-              <MyChart :data="chartList[index].chartData[0]"></MyChart>
+              <MyChart :data="chartList[index].chartData[0]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
             </div>
             <div class="splitChart">
-              <MyChart :data="chartList[index].chartData[1]"></MyChart>
+              <MyChart :data="chartList[index].chartData[1]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
             </div>
           </div>
-<!--          <div class="box-bottom"></div>-->
-<!--          <div :id="'chart'+index" style="width: 100%;height: 100%"></div>-->
         </li>
       </ul>
+      <div class="show-bottom">
+        <div class="show-msg"
+             v-for="(item,index) in errorMsg"
+             :key="index"
+        >
+          <el-container style="margin-left: 20px">
+            <el-header style="font-size: 20px;height: 40px;color:rgb(5,110,178) ">{{item.title}}</el-header>
+            <el-container
+                v-for="(subItem,subIndex) in item.value"
+                :key="subIndex"
+                style="margin-left: 20px"
+            >
+              <el-header style="height: 20px;">{{subItem.subtitle}}</el-header>
+              <el-main
+                  v-for="(minItem,minIndex) in subItem.msg"
+                  :key="minIndex"
+                  style="margin-left: 20px"
+              >{{minItem}}</el-main>
+            </el-container>
+
+          </el-container>
+
+        </div>
+      </div>
     </el-scrollbar>
+    <el-dialog
+        title="删除"
+        v-model="dialogVisible"
+        width="30%"
+    >
+      <span>是否删除该控制图？</span>
+      <template #footer>
+    <span class="dialog-footer">
+      <el-button @click="dialogVisible = false">取 消</el-button>
+      <el-button type="primary" @click="trueDel">确 定</el-button>
+    </span>
+      </template>
+    </el-dialog>
   </div>
 
 </template>
@@ -30,104 +69,92 @@
 <script setup>
 
 import {inject, onMounted, reactive, ref, watch} from "vue";
+import {Delete} from '@element-plus/icons-vue'
 import emitter from "../../plugins/Bus.js";
 import MyChart from "./MyChart.vue";
-
+import { chartData } from "@/store/chartData.js"
+import api from '@/api/groupChart.js'
+//
+const chartDataStore = chartData();
 let echarts = inject("echarts")
 const chartList = ref([])
-const data = reactive({
-  chartData:[1.5, 3.5, 5.5, 7.5, 9.5],
-  chartCL:[5.5,5.5,5.5,5.5,5.5],
-  chartUCL:[7.3806, 7.3806, 7.3806, 7.3806, 7.3806],
-  chartLCL:[3.6194, 3.6194, 3.6194, 3.6194, 3.6194],
-})
+const dialogVisible = ref(false)
+const currentChart = ref()
+const errorMsg = ref([])
 
 
-// const chart = () => {
+const delChartBtn = (index) =>{
+  dialogVisible.value = true
+  currentChart.value = index
+}
+const trueDel = () => {
+  chartList.value.splice(currentChart.value,1)
+  chartDataStore.chartData = JSON.parse(JSON.stringify(chartList.value))
+  dialogVisible.value = false
+}
+
+const collectErrorMsg = () => {
+  const chart = chartList.value;
+  errorMsg.value = []
+  for (let i =0;i<chart.length;i++){
+    let title = chart[i].chartName +"检验结果"
+    let value = []
+    for (let j =0;j<chart[i].chartData.length;j++){
+      let subtitle = chart[i].chartData[j].chartType +"控制图"
+      let msg =[]
+      for (let k =0;k<chart[i].chartData[j].chartCriterion.length;k++){
+        if (chart[i].chartData[j].chartCriterion[k].fit){
+          msg.push(chart[i].chartData[j].chartCriterion[k].msg)
+        }
+      }
+      if (msg.length !==0){
+        let subObj = {subtitle:subtitle,msg:msg}
+        value.push(subObj)
+      }
+    }
+    if (value.length !==0){
+      let obj = {title:title,value:value}
+      errorMsg.value.push(obj)
+    }
+  }
+}
+
+// const delXbarR = (delParam) =>{
+//   console.log("delXbarR")
+//   console.log(delParam)
 //
-//   console.log("chart执行")
-//   const chart = echarts.init( document.getElementById("chart0"));
-//   // document.getElementById('barChart2').removeAttribute('echarts_instance');
-//   console.log(chartList.value[0].chartName)
-//   const Option = {
-//     title: {
-//       text: chartList.value[0].chartName,
-//     },
 //
-//     tooltip: {
-//       trigger: 'axis'
-//     },
-//     xAxis: {
-//       type: 'value',
-//     },
-//     // 声明一个 Y 轴，数值轴。
-//     yAxis: {
-//       type: 'value'
 //
-//     },
-//     // 声明多个 bar 系列，默认情况下，每个系列会自动对应到 dataset 的每一列。
-//     series: [
-//       {
-//         type: 'line' ,
-//         data: chartList.value[0].chartData.dataXbar
-//       }
-//     ]
-//   };
-//   // const option = {
-//   //   xAxis: {
-//   //     type: 'category',
-//   //     data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-//   //   },
-//   //   yAxis: {
-//   //     type: 'value'
-//   //   },
-//   //   series: [
-//   //     {
-//   //       data: [150, 230, 224, 218, 135, 147, 260],
-//   //       type: 'line'
-//   //     }
-//   //   ]
-//   // };
-//   // document.getElementById("chart"+ 0 ).setAttribute('_echarts_instance_', '');
-//   chart.setOption(Option);
 //
 // }
-const test = () => {
-  let newPromise = new Promise((resolve) => {
-    changeChartList()
-    resolve()
-  })
-  newPromise.then(()=>{
 
-  })
-}
-const changeChartList = () => {
-
-  chartList.value=[
-    {chartName:"1的Xbar控制图",chartData:[1,2,3,4,5]},
-    {chartName:1,chartData:[1,2,3,4,5]},
-    {chartName:1,chartData:[1,2,3,4,5]},
-    {chartName:1,chartData:[1,2,3,4,5]},
-    {chartName:1,chartData:[1,2,3,4,5]},
-    {chartName:1,chartData:[1,2,3,4,5]},
-  ]
-}
 watch(chartList,(newVal)=>{
-  console.log("新数据")
   let newPromise = new Promise((resolve) => {
     chartList.value = newVal
     resolve()
   })
   newPromise.then(()=>{
-    // chart()
+    collectErrorMsg()
   })
-  // test()
-})
+},{immediate:true,deep:true})
 
 onMounted(()=>{
-  emitter.on('chart',(e)=>{
+  const data =JSON.parse(JSON.stringify(chartDataStore.chartData))
+  chartList.value = data
+  emitter.on('chart',(e) =>{
     chartList.value = e
   })
+
+  // emitter.on('delPoint',(e) =>{
+  //   console.log("接受到了")
+  //   console.log(e)
+  //   switch (e.chartType){
+  //     case "XbarR":
+  //       delXbarR(e)
+  //       break
+  //   }
+  //
+  // })
 
 })
 
@@ -161,12 +188,28 @@ onMounted(()=>{
 }
 .box-top{
   width: 100%;
-  height: 4%;
+  height: 5%;
+  display: flex;
   /*background: red;*/
 }
+
 .box-top h1{
   margin-left: 50px;
   font-size: 20px;
+  width: 70%;
+}
+.toolBox{
+  height: 100%;
+  width: 20%;
+  margin-left: 30px;
+  display: flex;
+  float: right;
+  /*justify-content: center;*/
+  align-items: center;
+}
+.box-top el-icon{
+  margin-left: 20px;
+  /*font-size: 20px;*/
 }
 .box-main{
   width: 100%;
@@ -179,6 +222,10 @@ onMounted(()=>{
   width: 100%;
   height: 48%;
   /*margin-top: -40px;*/
-
+}
+.show-bottom{
+  width: 100%;
+  min-height: 200px;
+  height: auto;
 }
 </style>

@@ -376,30 +376,492 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button type="primary" @click="submitXbarR">
+        <el-button type="primary" @click="submitXbarS">
           绘制控制图
         </el-button>
-        <el-button @click="XbarRDialog = false">取消</el-button>
+        <el-button @click="XbarSDialog = false">取消</el-button>
       </span>
     </template>
   </el-dialog>
   <el-dialog width="80%"  v-model="XbarDialog" title="Xbar控制图" style="background: rgb(240,240,240)">
+    <div class="dialog" v-loading="dialogLoading">
+      <div class="dialog-top">
+        <div class="left-area">
+          <div class="selectArea">
+            <el-scrollbar>
+              <ul v-for="(item,index) in cols">
+                <li>
+                  <el-checkbox
+                      v-model="isSelected[index]"
+                      :checked="isSelected[index]"
+                      :label="item.colName"
+                      style="margin-left: 20px"
+                      @change="handleChange(item,index)"
+                  />
+                </li>
+              </ul>
+            </el-scrollbar>
+          </div>
+          <el-button style="margin-top: 5px;width: 80%" :disabled="btnDisabled" @click="handleCurrentSelect">确定</el-button>
+        </div>
+        <div class="main-area">
+          <el-container style="margin-left: 30px">
+            <el-checkbox
+                v-model="selectText[0]"
+                @change="selectText[0]=true;
+                selectText[1]=false"
+            >样本数据：</el-checkbox>
+            <el-input
+                v-model="textarea"
+                style="width: 40%;margin-right: 10px"
+                placeholder="请从左侧选择要计算的数据"
+                :disabled="textDisabled"
 
+            >
+            </el-input>
+            <el-checkbox
+                v-model="selectText[1]"
+                style="margin-left: 30px;"
+                @change="selectText[0]=false;selectText[1]=true"
+            >子组大小：</el-checkbox>
+            <el-input
+                v-model="groupInput"
+                placeholder="请从左侧选择子组ID列"
+                style="width: 40%; margin-right: 10px"
+                :disabled="groupDisabled"
+            >
+            </el-input>
+          </el-container>
+          <el-divider content-position="left" >历史参数输入</el-divider>
+          <el-container>
+            <el-text style="margin-left: 30px">均值：</el-text>
+            <el-input v-model="historyAve" placeholder="输入均值（非必填）" style="width: 250px"></el-input>
+            <el-text style="margin-left: 30px">标准差：</el-text>
+            <el-input v-model="historySigma" placeholder="输入历史标准差（非必填）" style="width: 250px"></el-input>
+          </el-container>
+          <el-divider content-position="left">参数估计</el-divider>
+          <el-container>
+            <el-text style="margin-left: 30px" >估计标准差方法：</el-text>
+            <el-radio-group v-model="radio" >
+              <el-radio :label="1" style="margin-left: 30px">Rbar</el-radio>
+              <el-radio :label="2" style="margin-left: 30px">Sbar</el-radio>
+              <el-radio :label="3" style="margin-left: 30px">合并标准差</el-radio>
+            </el-radio-group>
+            <el-checkbox v-model="isUseConstant" style="margin-left: 50px;" :disabled="radio === 1">使用无偏常量</el-checkbox>
+          </el-container>
+          <el-divider content-position="left">检验</el-divider>
+          <el-row>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[0]" style="margin-left: 30px;">1个点，距离中心线大于K个标准差</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[0]"
+                    :min="1"
+                    :max="6"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[0]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[1]" style="margin-left: 30px;">连续K个点在中心线同一侧</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[1]"
+                    :min="7"
+                    :max="11"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[1]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+          </el-row>
+          <el-row style="margin-top: 5px">
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[2]" style="margin-left: 30px;">连续K个点，全部递增或递减</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[2]"
+                    :min="5"
+                    :max="8"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[2]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[3]" style="margin-left: 30px;">连续K个点，上下交错</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[3]"
+                    :min="12"
+                    :max="14"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[3]"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          <el-row style="margin-top: 5px">
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[4]" style="margin-left: 30px;">K+1个点中有K个点，距离中心线（同侧）大于2个标准差</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[4]"
+                    :min="2"
+                    :max="4"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[4]"
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[5]" style="margin-left: 30px;">K+1个点中有K个点，距离中心线（同侧）大于1个标准差</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[5]"
+                    :min="3"
+                    :max="6"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[5]"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          <el-row style="margin-top: 5px">
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[6]" style="margin-left: 30px;">连续K个点，距离中心线（任一侧）1个标准差以内</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[6]"
+                    :min="12"
+                    :max="15"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[6]"
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[7]" style="margin-left: 30px;">连续K个点，距离中心线（任一侧）大于1个标准差</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[7]"
+                    :min="6" :max="10"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[7]"
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button type="primary" @click="submitXbar">
+          绘制控制图
+        </el-button>
+        <el-button @click="XbarDialog = false">取消</el-button>
+      </span>
+    </template>
   </el-dialog>
   <el-dialog width="80%"  v-model="RDialog" title="R控制图" style="background: rgb(240,240,240)">
+    <div class="dialog" v-loading="dialogLoading">
+      <div class="dialog-top">
+        <div class="left-area">
+          <div class="selectArea">
+            <el-scrollbar>
+              <ul v-for="(item,index) in cols">
+                <li>
+                  <el-checkbox
+                      v-model="isSelected[index]"
+                      :checked="isSelected[index]"
+                      :label="item.colName"
+                      style="margin-left: 20px"
+                      @change="handleChange(item,index)"
+                  />
+                </li>
+              </ul>
+            </el-scrollbar>
+          </div>
+          <el-button style="margin-top: 5px;width: 80%" :disabled="btnDisabled" @click="handleCurrentSelect">确定</el-button>
+        </div>
+        <div class="main-area">
+          <el-container style="margin-left: 30px">
+            <el-checkbox
+                v-model="selectText[0]"
 
+                @change="selectText[0]=true;selectText[1]=false"
+            >样本数据：</el-checkbox>
+            <el-input
+                v-model="textarea"
+                style="width: 40%;margin-right: 10px"
+                placeholder="请从左侧选择要计算的数据"
+                :disabled="textDisabled"
+
+            >
+            </el-input>
+            <el-checkbox
+                v-model="selectText[1]"
+                style="margin-left: 30px;"
+                @change="selectText[0]=false;selectText[1]=true"
+            >子组大小：</el-checkbox>
+            <el-input
+                v-model="groupInput"
+                placeholder="请从左侧选择子组ID列"
+                style="width: 40%; margin-right: 10px"
+                :disabled="groupDisabled"
+            >
+            </el-input>
+          </el-container>
+          <el-divider content-position="left" >历史参数输入</el-divider>
+          <el-container>
+<!--            <el-text style="margin-left: 30px">均值：</el-text>-->
+<!--            <el-input v-model="historyAve" placeholder="输入均值（非必填）" style="width: 250px"></el-input>-->
+            <el-text style="margin-left: 30px">标准差：</el-text>
+            <el-input v-model="historySigma" placeholder="输入历史标准差（非必填）" style="width: 250px"></el-input>
+          </el-container>
+          <el-divider content-position="left">参数估计</el-divider>
+          <el-container>
+            <el-text style="margin-left: 30px" >估计标准差方法：</el-text>
+            <el-radio-group v-model="radio" >
+              <el-radio :label="1" style="margin-left: 30px">Rbar</el-radio>
+              <el-radio :label="2" style="margin-left: 30px">合并标准差</el-radio>
+            </el-radio-group>
+            <el-checkbox v-model="isUseConstant" :disabled="radio === 1" style="margin-left: 50px;">使用无偏常量</el-checkbox>
+          </el-container>
+          <el-divider content-position="left">检验</el-divider>
+          <el-row>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[0]" style="margin-left: 30px;">1个点，距离中心线大于K个标准差</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[0]"
+                    :min="1"
+                    :max="6"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[0]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[1]" style="margin-left: 30px;">连续K个点在中心线同一侧</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[1]"
+                    :min="7"
+                    :max="11"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[1]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+          </el-row>
+          <el-row style="margin-top: 5px">
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[2]" style="margin-left: 30px;">连续K个点，全部递增或递减</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[2]"
+                    :min="5"
+                    :max="8"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[2]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[3]" style="margin-left: 30px;">连续K个点，上下交错</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[3]"
+                    :min="12"
+                    :max="14"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[3]"
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button type="primary" @click="submitR">
+          绘制控制图
+        </el-button>
+        <el-button @click="RDialog = false">取消</el-button>
+      </span>
+    </template>
   </el-dialog>
   <el-dialog width="80%"  v-model="SDialog" title="S控制图" style="background: rgb(240,240,240)">
+    <div class="dialog" v-loading="dialogLoading">
+      <div class="dialog-top">
+        <div class="left-area">
+          <div class="selectArea">
+            <el-scrollbar>
+              <ul v-for="(item,index) in cols">
+                <li>
+                  <el-checkbox
+                      v-model="isSelected[index]"
+                      :checked="isSelected[index]"
+                      :label="item.colName"
+                      style="margin-left: 20px"
+                      @change="handleChange(item,index)"
+                  />
+                </li>
+              </ul>
+            </el-scrollbar>
+          </div>
+          <el-button style="margin-top: 5px;width: 80%" :disabled="btnDisabled" @click="handleCurrentSelect">确定</el-button>
+        </div>
+        <div class="main-area">
+          <el-container style="margin-left: 30px">
+            <el-checkbox
+                v-model="selectText[0]"
 
+                @change="selectText[0]=true;selectText[1]=false"
+            >样本数据：</el-checkbox>
+            <el-input
+                v-model="textarea"
+                style="width: 40%;margin-right: 10px"
+                placeholder="请从左侧选择要计算的数据"
+                :disabled="textDisabled"
+
+            >
+            </el-input>
+            <el-checkbox
+                v-model="selectText[1]"
+                style="margin-left: 30px;"
+                @change="selectText[0]=false;selectText[1]=true"
+            >子组大小：</el-checkbox>
+            <el-input
+                v-model="groupInput"
+                placeholder="请从左侧选择子组ID列"
+                style="width: 40%; margin-right: 10px"
+                :disabled="groupDisabled"
+            >
+            </el-input>
+          </el-container>
+          <el-divider content-position="left" >历史参数输入</el-divider>
+          <el-container>
+            <!--            <el-text style="margin-left: 30px">均值：</el-text>-->
+            <!--            <el-input v-model="historyAve" placeholder="输入均值（非必填）" style="width: 250px"></el-input>-->
+            <el-text style="margin-left: 30px">标准差：</el-text>
+            <el-input v-model="historySigma" placeholder="输入历史标准差（非必填）" style="width: 250px"></el-input>
+          </el-container>
+          <el-divider content-position="left">参数估计</el-divider>
+          <el-container>
+            <el-text style="margin-left: 30px" >估计标准差方法：</el-text>
+            <el-radio-group v-model="radio" >
+              <el-radio :label="1" style="margin-left: 30px">Sbar</el-radio>
+              <el-radio :label="2" style="margin-left: 30px">合并标准差</el-radio>
+            </el-radio-group>
+            <el-checkbox v-model="isUseConstant" style="margin-left: 50px;">使用无偏常量</el-checkbox>
+          </el-container>
+          <el-divider content-position="left">检验</el-divider>
+          <el-row>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[0]" style="margin-left: 30px;">1个点，距离中心线大于K个标准差</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[0]"
+                    :min="1"
+                    :max="6"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[0]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[1]" style="margin-left: 30px;">连续K个点在中心线同一侧</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[1]"
+                    :min="7"
+                    :max="11"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[1]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+          </el-row>
+          <el-row style="margin-top: 5px">
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[2]" style="margin-left: 30px;">连续K个点，全部递增或递减</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[2]"
+                    :min="5"
+                    :max="8"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[2]"
+                    @change=""
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div>
+                <el-checkbox v-model="XbarRule[3]" style="margin-left: 30px;">连续K个点，上下交错</el-checkbox>
+                <el-input-number
+                    controls-position="right"
+                    v-model="XbarRuleKey[3]"
+                    :min="12"
+                    :max="14"
+                    style="width: 80px;float: right"
+                    :disabled="!XbarRule[3]"
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button type="primary" @click="submitS">
+          绘制控制图
+        </el-button>
+        <el-button @click="SDialog = false">取消</el-button>
+      </span>
+    </template>
   </el-dialog>
+<!-- --------------------------------------------------------------------------------------------------------------------->
 </template>
 
 <script setup>
-import { XbarRDialog,XbarSDialog,XbarDialog,RDialog,SDialog } from "./isShowDialog.js"
+import { XbarRDialog,XbarSDialog,XbarDialog,RDialog,SDialog,
+    IMRDialog,IDialog,MRDialog,
+    PDialog,LaneyPDialog,NPDialog,UDialog,LaneyUDialog,CDialog
+} from "./isShowDialog.js"
 import { table } from "@/store/table.js";
 import { chartData } from "@/store/chartData.js"
 import {ref} from "@vue/reactivity";
-import {onBeforeMount, onMounted, watch} from "vue";
+import {onBeforeMount, onMounted, reactive, watch} from "vue";
 import message from "../../utils/Message.js";
 import api from '@/api/groupChart.js'
 import emitter from "../../plugins/Bus.js";
@@ -541,7 +1003,6 @@ const isValidInput=()=>{
 
 //提交Xbar-R控制图数据
 const submitXbarR=()=>{
-  dialogLoading.value = true
   allInputData.value=[]
   currentSimpleData.value=[]
   currentGroupSize.value=[]
@@ -553,6 +1014,7 @@ const submitXbarR=()=>{
     colsAsGroup.value=[]
     return
   }
+  dialogLoading.value = true
   let rules = ''
   for (let i = 0;i<XbarRule.value.length;i++){
     if (XbarRule.value[i]){
@@ -568,30 +1030,26 @@ const submitXbarR=()=>{
   if (radio.value === 1){
     sigmaMode="RbarSigma"
   }else {
-    if (isUseConstant === true){
+    if (isUseConstant.value === true){
       sigmaMode="UnionSigmaWithConstant"
     }else {
       sigmaMode = "UnionSigmaWithoutConstant"
     }
   }
-  //测试，只计算了第一个数据，后续需加for循环
-  currentSimpleData.value = allInputData.value[0].dataValue
-
-  let data = {
-    groupData: currentSimpleData.value,
-    groupSize: currentGroupSize.value,
-    historyAve: historyAveData,
-    historySigma: historySigmaData,
-    rules: rules,
-    rulesKey: XbarRuleKey.value ,
-    sigmaMode: sigmaMode
+  for (let i =0;i<allInputData.value.length;i++){
+    currentSimpleData.value = allInputData.value[i].dataValue
+    let data = {
+      groupData: currentSimpleData.value,
+      groupSize: currentGroupSize.value,
+      historyAve: historyAveData,
+      historySigma: historySigmaData,
+      rules: rules,
+      rulesKey: XbarRuleKey.value ,
+      sigmaMode: sigmaMode
+    }
+    // let chartData ={chartName:allInputData.value[0].dataName+"的Xbar控制图",chartParam:data}
+    XbarRApi(allInputData.value[i].dataName,data)
   }
-
-  let chartData ={chartName:allInputData.value[0].dataName+"的Xbar控制图",chartParam:data}
-  console.log(data)
-  // XbarRApi(JSON.parse(JSON.stringify(data)))
-
-  XbarRApi(allInputData.value[0].dataName,data)
   textarea.value=''
   groupInput.value=''
   colsAsSimple.value=[]
@@ -599,7 +1057,253 @@ const submitXbarR=()=>{
   allInputData.value=[]
   currentSimpleData.value=[]
   currentGroupSize.value=[]
+}
 
+const submitXbarS = () => {
+
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+  //校验输入是否合规
+  if (!isValidInput()){
+    textarea.value=''
+    groupInput.value=''
+    colsAsSimple.value=[]
+    colsAsGroup.value=[]
+    return
+  }
+  dialogLoading.value = true
+  let rules = ''
+  for (let i = 0;i<XbarRule.value.length;i++){
+    if (XbarRule.value[i]){
+      rules += '1'
+    }else {
+      rules += '0'
+    }
+  }
+  let historyAveData = historyAve.value === ''?-1:Number(historyAve.value)
+  let historySigmaData = historySigma.value === ''?-1:Number(historySigma.value)
+
+  let sigmaMode =''
+  if (radio.value === 1){
+    if (isUseConstant.value === true){
+      sigmaMode="SbarSigmaWithConstant"
+    }else {
+      sigmaMode="SbarSigmaWithoutConstant"
+    }
+  }else {
+    if (isUseConstant === true){
+      sigmaMode="UnionSigmaWithConstant"
+    }else {
+      sigmaMode = "UnionSigmaWithoutConstant"
+    }
+  }
+  for (let i =0;i<allInputData.value.length;i++){
+    currentSimpleData.value = allInputData.value[i].dataValue
+    let data = {
+      groupData: currentSimpleData.value,
+      groupSize: currentGroupSize.value,
+      historyAve: historyAveData,
+      historySigma: historySigmaData,
+      rules: rules,
+      rulesKey: XbarRuleKey.value ,
+      sigmaMode: sigmaMode
+    }
+    console.log(sigmaMode)
+    // let chartData ={chartName:allInputData.value[0].dataName+"的Xbar控制图",chartParam:data}
+    XbarSApi(allInputData.value[i].dataName,data)
+  }
+  textarea.value=''
+  groupInput.value=''
+  colsAsSimple.value=[]
+  colsAsGroup.value=[]
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+}
+
+const submitXbar = () => {
+
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+  //校验输入是否合规
+  if (!isValidInput()){
+    textarea.value=''
+    groupInput.value=''
+    colsAsSimple.value=[]
+    colsAsGroup.value=[]
+    return
+  }
+  dialogLoading.value = true
+  let rules = ''
+  for (let i = 0;i<XbarRule.value.length;i++){
+    if (XbarRule.value[i]){
+      rules += '1'
+    }else {
+      rules += '0'
+    }
+  }
+  let historyAveData = historyAve.value === ''?-1:Number(historyAve.value)
+  let historySigmaData = historySigma.value === ''?-1:Number(historySigma.value)
+
+  let sigmaMode =''
+  if (radio.value === 1){
+    sigmaMode="RbarSigma"
+  }else if (radio.value === 2){
+    if (isUseConstant.value === true){
+      sigmaMode="SbarSigmaWithConstant"
+    }else {
+      sigmaMode="SbarSigmaWithoutConstant"
+    }
+  }else {
+    if (isUseConstant === true){
+      sigmaMode="UnionSigmaWithConstant"
+    }else {
+      sigmaMode = "UnionSigmaWithoutConstant"
+    }
+  }
+
+  for (let i =0;i<allInputData.value.length;i++){
+    currentSimpleData.value = allInputData.value[i].dataValue
+    let data = {
+      groupData: currentSimpleData.value,
+      groupSize: currentGroupSize.value,
+      historyAve: historyAveData,
+      historySigma: historySigmaData,
+      rules: rules,
+      rulesKey: XbarRuleKey.value ,
+      sigmaMode: sigmaMode
+    }
+    console.log(sigmaMode)
+    // let chartData ={chartName:allInputData.value[0].dataName+"的Xbar控制图",chartParam:data}
+    XbarApi(allInputData.value[i].dataName,data)
+  }
+  textarea.value=''
+  groupInput.value=''
+  colsAsSimple.value=[]
+  colsAsGroup.value=[]
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+}
+
+const submitR =()=>{
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+  //校验输入是否合规
+  if (!isValidInput()){
+    textarea.value=''
+    groupInput.value=''
+    colsAsSimple.value=[]
+    colsAsGroup.value=[]
+    return
+  }
+  dialogLoading.value = true
+  let rules = ''
+  for (let i = 0;i<XbarRule.value.length;i++){
+    if (XbarRule.value[i]){
+      rules += '1'
+    }else {
+      rules += '0'
+    }
+  }
+  let historyAveData = historyAve.value === ''?-1:Number(historyAve.value)
+  let historySigmaData = historySigma.value === ''?-1:Number(historySigma.value)
+
+  let sigmaMode =''
+  if (radio.value === 1){
+    sigmaMode="RbarSigma"
+  }else {
+    if (isUseConstant.value === true){
+      sigmaMode="UnionSigmaWithConstant"
+    }else {
+      sigmaMode = "UnionSigmaWithoutConstant"
+    }
+  }
+  for (let i =0;i<allInputData.value.length;i++){
+    currentSimpleData.value = allInputData.value[i].dataValue
+    let data = {
+      groupData: currentSimpleData.value,
+      groupSize: currentGroupSize.value,
+      historyAve: historyAveData,
+      historySigma: historySigmaData,
+      rules: rules,
+      rulesKey: XbarRuleKey.value ,
+      sigmaMode: sigmaMode
+    }
+    // let chartData ={chartName:allInputData.value[0].dataName+"的Xbar控制图",chartParam:data}
+    RApi(allInputData.value[i].dataName,data)
+  }
+  textarea.value=''
+  groupInput.value=''
+  colsAsSimple.value=[]
+  colsAsGroup.value=[]
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+}
+
+const submitS =()=>{
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
+  //校验输入是否合规
+  if (!isValidInput()){
+    textarea.value=''
+    groupInput.value=''
+    colsAsSimple.value=[]
+    colsAsGroup.value=[]
+    return
+  }
+  dialogLoading.value = true
+  let rules = ''
+  for (let i = 0;i<XbarRule.value.length;i++){
+    if (XbarRule.value[i]){
+      rules += '1'
+    }else {
+      rules += '0'
+    }
+  }
+  let historyAveData = historyAve.value === ''?-1:Number(historyAve.value)
+  let historySigmaData = historySigma.value === ''?-1:Number(historySigma.value)
+
+  let sigmaMode =''
+  if (radio.value === 1){
+    if (isUseConstant.value === true){
+      sigmaMode="SbarSigmaWithConstant"
+    }else {
+      sigmaMode="SbarSigmaWithoutConstant"
+    }
+  }else {
+    if (isUseConstant === true){
+      sigmaMode="UnionSigmaWithConstant"
+    }else {
+      sigmaMode = "UnionSigmaWithoutConstant"
+    }
+  }
+  for (let i =0;i<allInputData.value.length;i++){
+    currentSimpleData.value = allInputData.value[i].dataValue
+    let data = {
+      groupData: currentSimpleData.value,
+      groupSize: currentGroupSize.value,
+      historyAve: historyAveData,
+      historySigma: historySigmaData,
+      rules: rules,
+      rulesKey: XbarRuleKey.value ,
+      sigmaMode: sigmaMode
+    }
+    // let chartData ={chartName:allInputData.value[0].dataName+"的Xbar控制图",chartParam:data}
+    SApi(allInputData.value[i].dataName,data)
+  }
+  textarea.value=''
+  groupInput.value=''
+  colsAsSimple.value=[]
+  colsAsGroup.value=[]
+  allInputData.value=[]
+  currentSimpleData.value=[]
+  currentGroupSize.value=[]
 }
 
 const XbarRApi =(chartName,data)=>{
@@ -608,13 +1312,10 @@ const XbarRApi =(chartName,data)=>{
     XbarRDialog.value = false
     if (res.success){
       console.log(res.data)
-      let chart = {chartName:chartName+"的XbarR控制图",chartData:res.data}
-      console.log(chart)
+      let chart = {chartName:chartName+"的XbarR控制图",chartType:"XbarR",chartData:res.data,oldParam:data,isDel:false}
       chartDataStore.chartData.push(chart)
-      console.log(chartDataStore.chartData)
       const chartData = chartDataStore.chartData
       emitter.emit('chart',chartData);
-
     }
   }).catch( error =>{
     dialogLoading.value = false
@@ -622,6 +1323,197 @@ const XbarRApi =(chartName,data)=>{
   })
 }
 
+const delXbarRApi =(delParam)=>{
+  const oldParam = JSON.parse(JSON.stringify(chartDataStore.chartData[delParam.chartIndex].oldParam))
+  let data = {
+    groupData: oldParam.groupData,
+    groupSize: oldParam.groupSize,
+    historyAve: oldParam.historyAve,
+    historySigma: oldParam.historySigma,
+    rules: oldParam.rules,
+    rulesKey: oldParam.rulesKey ,
+    sigmaMode: oldParam.sigmaMode,
+    delPoint:delParam.delPointIndex,
+  }
+  console.log("delDataParam")
+  // console.log(data)
+  api.delXbarRApi(data).then( res =>{
+    if (res.success){
+      console.log(res.data)
+      let chart = {chartName:chartDataStore.chartData[delParam.chartIndex].chartName+"（修改后）",chartType:"XbarR",chartData:res.data,oldParam:data,isDel:true}
+      chartDataStore.chartData.splice(delParam.chartIndex+1,0,chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    console.log(error)
+  })
+}
+
+const XbarSApi =(chartName,data)=>{
+  api.XbarSApi(data).then( res =>{
+    dialogLoading.value = false
+    XbarSDialog.value = false
+    if (res.success){
+      console.log(res.data)
+      let chart = {chartName:chartName+"的XbarS控制图",chartData:res.data,chartType:"XbarS",oldParam:data,isDel:false}
+          // ,chartType:"XbarR",chartData:res.data,oldParam:data,isDel:false
+      chartDataStore.chartData.push(chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    dialogLoading.value = false
+    console.log(error)
+  })
+}
+
+const delXbarSApi =(delParam)=>{
+  const oldParam = JSON.parse(JSON.stringify(chartDataStore.chartData[delParam.chartIndex].oldParam))
+  let data = {
+    groupData: oldParam.groupData,
+    groupSize: oldParam.groupSize,
+    historyAve: oldParam.historyAve,
+    historySigma: oldParam.historySigma,
+    rules: oldParam.rules,
+    rulesKey: oldParam.rulesKey ,
+    sigmaMode: oldParam.sigmaMode,
+    delPoint:delParam.delPointIndex,
+  }
+  // console.log(data)
+  api.delXbarSApi(data).then( res =>{
+    if (res.success){
+      console.log(res.data)
+      let chart = {chartName:chartDataStore.chartData[delParam.chartIndex].chartName+"（修改后）",chartType:"XbarS",chartData:res.data,oldParam:data,isDel:true}
+      chartDataStore.chartData.splice(delParam.chartIndex+1,0,chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    console.log(error)
+  })
+}
+
+const XbarApi =(chartName,data)=>{
+  api.XbarApi(data).then( res =>{
+    dialogLoading.value = false
+    XbarDialog.value = false
+    if (res.success){
+      let chart = {chartName:chartName+"的Xbar控制图",chartData:res.data,chartType:"Xbar",oldParam:data,isDel:false}
+      chartDataStore.chartData.push(chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    dialogLoading.value = false
+    console.log(error)
+  })
+}
+
+const delXbarApi =(delParam)=>{
+  const oldParam = JSON.parse(JSON.stringify(chartDataStore.chartData[delParam.chartIndex].oldParam))
+  let data = {
+    groupData: oldParam.groupData,
+    groupSize: oldParam.groupSize,
+    historyAve: oldParam.historyAve,
+    historySigma: oldParam.historySigma,
+    rules: oldParam.rules,
+    rulesKey: oldParam.rulesKey ,
+    sigmaMode: oldParam.sigmaMode,
+    delPoint:delParam.delPointIndex,
+  }
+  api.delXbarApi(data).then( res =>{
+    if (res.success){
+      let chart = {chartName:chartDataStore.chartData[delParam.chartIndex].chartName+"（修改后）",chartType:"Xbar",chartData:res.data,oldParam:data,isDel:true}
+      chartDataStore.chartData.splice(delParam.chartIndex+1,0,chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    console.log(error)
+  })
+}
+
+const RApi =(chartName,data)=>{
+  api.RApi(data).then( res =>{
+    dialogLoading.value = false
+    RDialog.value = false
+    if (res.success){
+      let chart = {chartName:chartName+"的R控制图",chartData:res.data,chartType:"R",oldParam:data,isDel:false}
+      chartDataStore.chartData.push(chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    dialogLoading.value = false
+    console.log(error)
+  })
+}
+
+const delRApi =(delParam)=>{
+  const oldParam = JSON.parse(JSON.stringify(chartDataStore.chartData[delParam.chartIndex].oldParam))
+  let data = {
+    groupData: oldParam.groupData,
+    groupSize: oldParam.groupSize,
+    historyAve: oldParam.historyAve,
+    historySigma: oldParam.historySigma,
+    rules: oldParam.rules,
+    rulesKey: oldParam.rulesKey ,
+    sigmaMode: oldParam.sigmaMode,
+    delPoint:delParam.delPointIndex,
+  }
+  api.delRApi(data).then( res =>{
+    if (res.success){
+      let chart = {chartName:chartDataStore.chartData[delParam.chartIndex].chartName+"（修改后）",chartType:"R",chartData:res.data,oldParam:data,isDel:true}
+      chartDataStore.chartData.splice(delParam.chartIndex+1,0,chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    console.log(error)
+  })
+}
+
+
+const SApi =(chartName,data)=>{
+  api.SApi(data).then( res =>{
+    dialogLoading.value = false
+    SDialog.value = false
+    if (res.success){
+      let chart = {chartName:chartName+"的S控制图",chartData:res.data,chartType:"S",oldParam:data,isDel:false}
+      chartDataStore.chartData.push(chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    dialogLoading.value = false
+    console.log(error)
+  })
+}
+
+const delSApi =(delParam)=>{
+  const oldParam = JSON.parse(JSON.stringify(chartDataStore.chartData[delParam.chartIndex].oldParam))
+  let data = {
+    groupData: oldParam.groupData,
+    groupSize: oldParam.groupSize,
+    historyAve: oldParam.historyAve,
+    historySigma: oldParam.historySigma,
+    rules: oldParam.rules,
+    rulesKey: oldParam.rulesKey ,
+    sigmaMode: oldParam.sigmaMode,
+    delPoint:delParam.delPointIndex,
+  }
+  api.delSApi(data).then( res =>{
+    if (res.success){
+      let chart = {chartName:chartDataStore.chartData[delParam.chartIndex].chartName+"（修改后）",chartType:"S",chartData:res.data,oldParam:data,isDel:true}
+      chartDataStore.chartData.splice(delParam.chartIndex+1,0,chart)
+      const chartData = chartDataStore.chartData
+      emitter.emit('chart',chartData);
+    }
+  }).catch( error =>{
+    console.log(error)
+  })
+}
 
 const getCol=()=>{
   cols.value=[]
@@ -635,12 +1527,12 @@ const getCol=()=>{
   }
   console.log(cols.value)
 }
-watch(XbarSDialog,(newVal)=>{
+watch(XbarRDialog,(newVal)=>{
   if (newVal === true){
     getCol()
   }
 })
-watch(XbarRDialog,(newVal)=>{
+watch(XbarSDialog,(newVal)=>{
   if (newVal === true){
     getCol()
   }
@@ -659,6 +1551,29 @@ watch(SDialog,(newVal)=>{
   if (newVal === true){
     getCol()
   }
+})
+
+onMounted(()=>{
+  emitter.on('delPoint',(e) =>{
+    switch (e.chartType){
+      case "XbarR":
+        delXbarRApi(e)
+            break
+      case "XbarS":
+        delXbarSApi(e)
+            break
+      case "Xbar":
+        delXbarApi(e)
+            break
+      case "R":
+        delRApi(e)
+            break
+      case "S":
+        delSApi(e)
+            break
+    }
+
+  })
 })
 
 </script>

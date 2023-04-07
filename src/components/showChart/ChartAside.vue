@@ -106,25 +106,25 @@
               <template #content>
                 <span>在子组中没有连续数据（独立观测值）时，<br />监视过程的均值和变异（移动极差）。</span>
               </template>
-              <span @mouseenter="visible.IMRVisible = true" @mouseleave="visible.IMRVisible = false">
+              <span @mouseenter="visible.IMRVisible = true" @mouseleave="visible.IMRVisible = false" @click="IMRDialog = true">
                 I-MR控制图
               </span>
             </el-tooltip>
           </el-menu-item>
-          <el-menu-item index="2-2">
-            <el-tooltip
-                :visible="visible.ZMRVisible"
-                effect="light"
-                placement="right-start"
-            >
-              <template #content>
-                <span>在为某个部件设置相对较少的单位（如短期过程）时，<br />监视不同部件的均值和变异（移动极差）。</span>
-              </template>
-              <span @mouseenter="visible.ZMRVisible = true" @mouseleave="visible.ZMRVisible = false">
-                Z-MR控制图
-              </span>
-            </el-tooltip>
-          </el-menu-item>
+<!--          <el-menu-item index="2-2">-->
+<!--            <el-tooltip-->
+<!--                :visible="visible.ZMRVisible"-->
+<!--                effect="light"-->
+<!--                placement="right-start"-->
+<!--            >-->
+<!--              <template #content>-->
+<!--                <span>在为某个部件设置相对较少的单位（如短期过程）时，<br />监视不同部件的均值和变异（移动极差）。</span>-->
+<!--              </template>-->
+<!--              <span @mouseenter="visible.ZMRVisible = true" @mouseleave="visible.ZMRVisible = false">-->
+<!--                Z-MR控制图-->
+<!--              </span>-->
+<!--            </el-tooltip>-->
+<!--          </el-menu-item>-->
           <el-menu-item index="2-3">
             <el-tooltip
                 :visible="visible.IVisible"
@@ -134,7 +134,7 @@
               <template #content>
                 <span>在子组中没有连续数据（独立观测值）时，监视过程的均值。</span>
               </template>
-              <span @mouseenter="visible.IVisible = true" @mouseleave="visible.IVisible = false">
+              <span @mouseenter="visible.IVisible = true" @mouseleave="visible.IVisible = false" @click="IDialog = true">
                 单值控制图
               </span>
             </el-tooltip>
@@ -148,7 +148,7 @@
               <template #content>
                 <span>在子组中没有连续数据（独立观测值）时，监视过程的变异（移动极差）。</span>
               </template>
-              <span @mouseenter="visible.MRVisible = true" @mouseleave="visible.MRVisible = false">
+              <span @mouseenter="visible.MRVisible = true" @mouseleave="visible.MRVisible = false" @click="MRDialog = true">
                 移动极差控制图
               </span>
             </el-tooltip>
@@ -169,7 +169,7 @@
               <template #content>
                 <span>在子组中没有连续数据（独立观测值）时，监视过程的变异（移动极差）。</span>
               </template>
-              <span @mouseenter="visible.PVisible = true" @mouseleave="visible.PVisible = false">
+              <span @mouseenter="visible.PVisible = true" @mouseleave="visible.PVisible = false" @click="PDialog = true">
                 P控制图
               </span>
             </el-tooltip>
@@ -183,8 +183,8 @@
               <template #content>
                 <span>创建可更正过度离散或欠离散问题的P控制图。</span>
               </template>
-              <span @mouseenter="visible.LaneyPVisible = true" @mouseleave="visible.LaneyPVisible = false">
-                Laney P‘控制图
+              <span @mouseenter="visible.LaneyPVisible = true" @mouseleave="visible.LaneyPVisible = false" @click="LaneyPDialog = true">
+                Laney P’控制图
               </span>
             </el-tooltip>
           </el-menu-item>
@@ -197,7 +197,7 @@
               <template #content>
                 <span>监视每个子组的不良品数，在将每个不良品分类为<br/>两种类别之一（如通过或失败）时使用。</span>
               </template>
-              <span @mouseenter="visible.NPVisible = true" @mouseleave="visible.NPVisible = false">
+              <span @mouseenter="visible.NPVisible = true" @mouseleave="visible.NPVisible = false" @click="NPDialog = true">
                 NP控制图
               </span>
             </el-tooltip>
@@ -211,7 +211,7 @@
               <template #content>
                 <span>监视每个单位的缺陷数，在将每个不良品具有多个缺陷时使用。</span>
               </template>
-              <span @mouseenter="visible.UVisible = true" @mouseleave="visible.UVisible = false">
+              <span @mouseenter="visible.UVisible = true" @mouseleave="visible.UVisible = false" @click="UDialog = true">
                 U控制图
               </span>
             </el-tooltip>
@@ -225,7 +225,7 @@
               <template #content>
                 <span>创建可更正过度离散或欠离散问题的U控制图。</span>
               </template>
-              <span @mouseenter="visible.LaneyUVisible = true" @mouseleave="visible.LaneyUVisible = false">
+              <span @mouseenter="visible.LaneyUVisible = true" @mouseleave="visible.LaneyUVisible = false" @click="LaneyUDialog = true">
                 Laney U’控制图
               </span>
             </el-tooltip>
@@ -239,7 +239,7 @@
               <template #content>
                 <span>监视每个子组的缺陷数，在将每个不良品具有多个缺陷时使用。</span>
               </template>
-              <span @mouseenter="visible.CVisible = true" @mouseleave="visible.CVisible = false">
+              <span @mouseenter="visible.CVisible = true" @mouseleave="visible.CVisible = false" @click="CDialog = true">
                 C控制图
               </span>
             </el-tooltip>
@@ -251,16 +251,23 @@
 
   </el-aside>
   <Dialog></Dialog>
+  <SingleValueDialog></SingleValueDialog>
+  <AttributeDialog></AttributeDialog>
 
 </template>
 
 <script setup>
 import {reactive, ref} from "vue";
-import { XbarRDialog,XbarSDialog,XbarDialog,RDialog,SDialog } from "./isShowDialog.js"
+import { XbarRDialog,XbarSDialog,XbarDialog,RDialog,SDialog,
+  IMRDialog,IDialog,MRDialog,
+  PDialog,LaneyPDialog,NPDialog,UDialog,LaneyUDialog,CDialog
+} from "./isShowDialog.js"
 import {ArrowLeftBold, ArrowRightBold} from '@element-plus/icons-vue'
 import Dialog from "./Dialog.vue";
+import SingleValueDialog from "./SingleValueDialog.vue";
 import { table } from "@/store/table.js";
 import emitter from "../../plugins/Bus.js";
+import AttributeDialog from "./AttributeDialog.vue";
 const visible =reactive({
   XbarRVisible:false,
   XbarSVisible:false,
