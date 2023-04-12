@@ -7,7 +7,6 @@
   >
     <li @click="removeAllMarkPoint" >删除所有标记点</li>
     <li @click="delPoint">删除有标记的点，重新计算</li>
-    <li>恢复被删除的点，重新计算</li>
   </ul>
 </template>
 
@@ -71,8 +70,6 @@ const delPoint = () =>{
     message.warning("请先标记要删除的点")
     return
   }
-
-
   let delPointIndex = JSON.parse(JSON.stringify(markPointIndex.value))
 
   if (props.data.chartType === "MR"){

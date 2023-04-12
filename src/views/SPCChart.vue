@@ -3,13 +3,6 @@
   <div class="container">
     <ChartAside></ChartAside>
       <div class="resizable-container" >
-<!--        <div id="top" class="main-t">-->
-<!--          <ShowChart></ShowChart>-->
-<!--        </div>-->
-<!--        <div id="move" class="move"></div>-->
-<!--        <div id="bottom" class="main-b">-->
-<!--          <ChartDataTable></ChartDataTable>-->
-<!--        </div>-->
         <div class = "my-box">
           <div class="main-t">
             <ShowChart></ShowChart>

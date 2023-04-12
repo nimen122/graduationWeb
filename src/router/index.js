@@ -25,6 +25,11 @@ const routes = [
         path: '/SPCChart',
         component: () => import('../views/SPCChart.vue'),
     },
+    {
+        name: 'UserManage',
+        path: '/UserManage',
+        component: () => import('../views/UserManage.vue'),
+    },
 ];
 
 //这里不是通过new来创建，通过createRouter 方法创建，使用的模式不是通过mode来定义

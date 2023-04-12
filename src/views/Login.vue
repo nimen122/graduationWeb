@@ -68,7 +68,9 @@ import { reactive, ref} from "vue";
 import {Lock,User} from '@element-plus/icons-vue';
 import api from '@/api/login.js'
 import message from "../utils/Message.js";
+import {user} from '@/store/user.js'
 
+const userStore = user()
 const preRef = ref('')
 
 let flag = ref(true)
@@ -149,8 +151,8 @@ const login = ()=>{
         message.sucess("登陆成功")
         window.sessionStorage.setItem('token',res.data)
         router.push('/Home')
+        getCurrentUser()
       }
-      console.log('login',res)
     }).catch(error =>{
       console.log(error)
       loginLoading.value = false
@@ -175,6 +177,23 @@ const register =()=>{
     }).catch(error =>{
       console.log(error)
     })
+  })
+}
+
+const getCurrentUser = () => {
+  api.currentUserApi().then( res => {
+    if (res.success){
+      let data = {
+        userAccount:res.data.userAccount,
+        userName:res.data.userName,
+        userRole:res.data.userRole,
+        userPhone:res.data.userPhone,
+        token:res.data.token
+      }
+      userStore.user = data
+    }
+  }).catch( error => {
+    console.log(error)
   })
 }
 

@@ -7,6 +7,12 @@ const getSourceDataApi = (data) =>{
         data
     })
 }
+const getSourceApi = (data) =>{
+    return dataSource.post({
+        url:'/Source/getSource',
+        data
+    })
+}
 
 const getChartDataInfoApi = (data) =>{
     return dataSource.post({
@@ -22,8 +28,33 @@ const addSourceDataApi = (data) =>{
     })
 }
 
+const auditPassApi = (data) =>{
+    return dataSource.post({
+        url:'/Source/checkPass',
+        data
+    })
+}
+
+const auditFailApi = (data) =>{
+    return dataSource.post({
+        url:'/Source/checkFail',
+        data
+    })
+}
+
+const errorHandleApi = (data) =>{
+    return dataSource.post({
+        url:'/Source/errorHandle',
+        data
+    })
+}
+
 export default {
     getSourceDataApi,
+    getSourceApi,
     getChartDataInfoApi,
     addSourceDataApi,
+    auditPassApi,
+    auditFailApi,
+    errorHandleApi,
 }

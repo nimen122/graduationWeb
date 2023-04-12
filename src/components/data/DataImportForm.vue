@@ -1,10 +1,20 @@
 <template>
-
     <el-button class="dataBtn" type="success" size="default" @click="showAdd">新增数据</el-button>
     <el-dialog  width="60%"  v-model="addFormVisible" title="新增">
       <div class="dialog-main" v-loading="sourceDataLoading">
-        <el-button type="success" @click="submitData" style="margin-left: 30px">提交</el-button>
-        <el-button type="warning" @click="clearTable" style="margin-left: 30px">清空表格</el-button>
+        <el-container>
+          <el-button type="success" @click="submitData" style="margin-left: 30px">提交</el-button>
+          <el-button type="warning" @click="clearTable" style="margin-left: 30px">清空表格</el-button>
+          <div style="margin-left: 30px">
+            <el-upload  :limit="1" action="" :multiple="false" :show-file-list="false"
+                        accept="csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        :http-request="httpRequest"
+            >
+              <el-button type="success" ><el-icon><Upload></Upload></el-icon>导入文件</el-button>
+            </el-upload>
+          </div>
+        </el-container>
+
         <hot-table
             :settings="state.hotSettings"
             ref="hotTableComponent"
@@ -29,7 +39,8 @@ import 'handsontable/languages/zh-CN'; //汉语包
 import api from '@/api/dataSource.js'
 import {reactive, ref} from "vue";
 import message from "../../utils/Message.js";
-import qs from "qs";
+import readXlsxFile from 'read-excel-file'
+import XLSX from 'xlsx'
 registerAllModules();
 let addFormVisible = ref(false)
 
@@ -90,7 +101,37 @@ let state = reactive({
 })
 
 const sourceDataLoading = ref(false)
+const httpRequest = (e) =>{
+  const file = e.file;
+  if (!file) {
+    return false
+  } else if (!/\.(xls|xlsx|csv)$/.test(file.name.toLowerCase())) {
+    message.error('文件格式不正确');
+    return false
+  }
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    // 读取文件内容
+    const data = e.target.result;
+    // 解析为 workbook 对象
+    const workbook = XLSX.read(data, { type: "binary" });
+    // 获取第一个工作表的名称
+    const sheetName = workbook.SheetNames[0];
+    // 获取第一个工作表的对象
+    const sheet = workbook.Sheets[sheetName];
+    // 将工作表转换为 JSON 数组
+    const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    hotTableComponent.value.hotInstance.loadData(sheetData)
+    console.log(sheetData);
+  }
+  // 以二进制字符串的形式读取文件
+  reader.readAsBinaryString(file);
 
+  // readXlsxFile(file).then((rows) => {
+  //   // rows 是一个二维数组，代表 Excel 文件的每一行数据
+  //   hotTableComponent.value.hotInstance.loadData(rows)
+  // });
+}
 
 const submitData = () => {
   sourceDataLoading.value = true;
@@ -115,7 +156,6 @@ const submitData = () => {
         if (data[i][0] !== null && data[i][0] !== ''){
           oneGroup.push(data[i].shift())
         }
-
       }
       group.push(oneGroup);
     }
@@ -138,19 +178,24 @@ const submitData = () => {
   console.log(param)
   api.addSourceDataApi(param).then( res=>{
     sourceDataLoading.value = false;
+    addFormVisible.value = false
     if (res.success){
       message.sucess("数据上传成功")
+      emit('getSourceData')
     }
   }).catch( error =>{
+    sourceDataLoading.value = false;
+    addFormVisible.value = false
+    message.error("请求超时，请重试")
     console.log(error)
   })
-
 }
 
 const clearTable = () => {
   hotTableComponent.value.hotInstance.clear();
 }
 
+const emit = defineEmits(['getSourceData'])
 
 </script>
 

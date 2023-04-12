@@ -22,9 +22,28 @@
         </ul>
       </div>
       <div class="header-right">
-        <div class="user" @click="ceshi">
-          <i class="iconfont icon-user" ></i>
-          <el-text style="font-size: 20px;color: #808080">用户</el-text>
+        <div class="user">
+          <el-dropdown>
+<!--            <span class="el-dropdown-link">-->
+<!--              <el-icon><User/></el-icon>-->
+<!--              {{ userName }}-->
+<!--              <el-icon class="el-icon&#45;&#45;right">-->
+<!--                <arrow-down />-->
+<!--              </el-icon>-->
+<!--            </span>-->
+            <el-container>
+              <i class="iconfont icon-user" ></i>
+              <el-text style="font-size: 20px;color: #808080">{{ userStore.user.userName }}</el-text>
+<!--              <el-icon class="el-icon&#45;&#45;right"><arrow-down/></el-icon>-->
+            </el-container>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="loginOut">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+
+          </el-dropdown>
+
 <!--          <el-icon :size="20"><User /></el-icon>-->
         </div>
       </div>
@@ -34,9 +53,14 @@
 
 <script setup>
 //element
-import { User} from '@element-plus/icons-vue'
+import {ArrowDown, User} from '@element-plus/icons-vue'
 import message from "../../utils/Message.js";
-import {watch} from "vue";
+import {onMounted, ref, watch} from "vue";
+import { user } from '@/store/user.js'
+import api from '@/api/login.js'
+const userStore = user()
+
+const userName = ref('')
 
 let topBar = ref([
   {id:1,title:"数据展示",name:'Home'},
@@ -56,6 +80,19 @@ const tabBar = (item)=>{
   })
 }
 
+const loginOut = () => {
+  api.loginOut().then(res => {
+    if (res.success){
+      userStore.user = {}
+      router.push('/login')
+    }
+  }).catch( error => {
+
+  })
+  router.push('/login')
+
+}
+
 watch(()=>router.currentRoute.value.name,(toPath)=>{
   if ( toPath === 'Home'){
     currentId.value = 1;
@@ -73,6 +110,9 @@ watch(()=>router.currentRoute.value.name,(toPath)=>{
   }
 },{immediate:true})
 
+onMounted(()=>{
+  userName.value = userStore.user.userName
+})
 
 </script>
 
@@ -167,4 +207,14 @@ header{
   color: #808080;
   cursor: pointer;
 }
+/*:deep(.el-dropdown-link) {*/
+/*  cursor: pointer;*/
+/*  color: var(--el-color-primary);*/
+/*  display: flex;*/
+/*  align-items: center;*/
+/*}*/
+:deep(.el-dropdown-link,.el-dropdown-link:focus,.el-dropdown-link:focus-visible){
+  outline: transparent auto 0px !important;
+}
+
 </style>
