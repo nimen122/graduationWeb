@@ -3,23 +3,29 @@
     <el-scrollbar height="100%">
       <ul class="main-main">
         <li v-for="(item,index) in chartList" :key="index">
-          <div class="box-top">
-            <h1 >{{ chartList[index].chartName}}</h1>
-            <div class="toolBox">
-              <el-icon @click="delChartBtn(index)" style="font-size: 20px;margin-left: 10px">
-                <delete />
-              </el-icon>
+          <div ref="imageToFile" class="test">
+            <div class="box-top">
+              <h1 >{{ chartList[index].chartName}}</h1>
+              <div class="toolBox">
+                <el-icon @click="delChartBtn(index)" style="font-size: 20px;margin-left: 10px;cursor: pointer">
+                  <delete />
+                </el-icon>
+                <el-icon @click="toImage(index)" style="font-size: 20px;margin-left: 10px;cursor: pointer">
+                  <Download />
+                </el-icon>
+<!--                <el-button @click="toImage(index)">test</el-button>-->
+              </div>
             </div>
-          </div>
-          <div class="box-main" v-if="chartList[index].chartData.length===1">
-            <MyChart :data="chartList[index].chartData[0]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
-          </div>
-          <div class="box-main" v-else>
-            <div class="splitChart">
+            <div class="box-main" v-if="chartList[index].chartData.length===1">
               <MyChart :data="chartList[index].chartData[0]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
             </div>
-            <div class="splitChart">
-              <MyChart :data="chartList[index].chartData[1]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
+            <div class="box-main" v-else>
+              <div class="splitChart">
+                <MyChart :data="chartList[index].chartData[0]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
+              </div>
+              <div class="splitChart">
+                <MyChart :data="chartList[index].chartData[1]" :index="index" :type="chartList[index].chartType" :is-del="chartList[index].isDel"></MyChart>
+              </div>
             </div>
           </div>
         </li>
@@ -69,11 +75,12 @@
 <script setup>
 
 import {inject, onMounted, reactive, ref, watch} from "vue";
-import {Delete} from '@element-plus/icons-vue'
+import {Delete,Download} from '@element-plus/icons-vue'
 import emitter from "../../plugins/Bus.js";
 import MyChart from "./MyChart.vue";
 import { chartData } from "@/store/chartData.js"
 import api from '@/api/groupChart.js'
+import html2canvas from "html2canvas";
 //
 const chartDataStore = chartData();
 let echarts = inject("echarts")
@@ -81,7 +88,7 @@ const chartList = ref([])
 const dialogVisible = ref(false)
 const currentChart = ref()
 const errorMsg = ref([])
-
+const imageToFile = ref(null)
 
 const delChartBtn = (index) =>{
   dialogVisible.value = true
@@ -91,6 +98,78 @@ const trueDel = () => {
   chartList.value.splice(currentChart.value,1)
   chartDataStore.chartData = JSON.parse(JSON.stringify(chartList.value))
   dialogVisible.value = false
+}
+
+const toImage = (index) => {
+  // 手动创建一个 canvas 标签
+  const canvas = document.createElement('canvas')
+  // 获取父标签，意思是这个标签内的 DOM 元素生成图片
+  // imageToFile是给截图范围内的父级元素自定义的ref名称
+  let canvasBox = imageToFile.value
+  console.log(canvasBox)
+  console.log(typeof canvasBox)
+  // 获取父级的宽高
+  const width = parseInt(window.getComputedStyle(canvasBox[index]).width)
+  const height = parseInt(window.getComputedStyle(canvasBox[index]).height)
+  // 宽高 * 2 并放大 2 倍 是为了防止图片模糊
+  canvas.width = width * 4
+  canvas.height = height * 4
+  canvas.style.width = width/2 + 'px'
+  canvas.style.height = height/2 + 'px'
+  const context = canvas.getContext('2d')
+  context.scale(4, 4)
+  html2canvas(canvasBox[index],{allowTaint:true}).then( (canvas) => {
+    const capture = canvas.toDataURL('image/png')
+    //下载浏览器弹出下载信息的属性
+    const saveInfo = {
+      //导出文件格式自己定义，我这里用的是时间作为文件名
+      download: chartList.value[index].chartName + getNowTime() + `.png`,
+      href: capture,
+    }
+    //下载，浏览器弹出下载文件提示
+    downloadFile(saveInfo)
+  })
+}
+/*获取当前时间，为截图的图片提供名称 */
+const getNowTime = () => {
+  const yy = new Date().getFullYear()
+  const MM =
+      new Date().getMonth() + 1 < 10
+          ? '0' + (new Date().getMonth() + 1)
+          : new Date().getMonth() + 1
+  const dd =
+      new Date().getDate() < 10
+          ? '0' + new Date().getDate()
+          : new Date().getDate()
+  const HH =
+      new Date().getHours() < 10
+          ? '0' + new Date().getHours()
+          : new Date().getHours()
+  const mm =
+      new Date().getMinutes() < 10
+          ? '0' + new Date().getMinutes()
+          : new Date().getMinutes()
+  const ss =
+      new Date().getSeconds() < 10
+          ? '0' + new Date().getSeconds()
+          : new Date().getSeconds()
+  return yy + MM + dd + '-' + HH + mm + ss
+}
+
+
+//下载截图
+const downloadFile = (saveInfo) => {
+  const element = document.createElement('a')
+  element.style.display = 'none'
+
+  for (const key in saveInfo) {
+    element.setAttribute(key, saveInfo[key])
+  }
+  document.body.appendChild(element)
+  element.click()
+  setTimeout(() => {
+    document.body.removeChild(element)
+  }, 300)
 }
 
 const collectErrorMsg = () => {
@@ -118,15 +197,6 @@ const collectErrorMsg = () => {
     }
   }
 }
-
-// const delXbarR = (delParam) =>{
-//   console.log("delXbarR")
-//   console.log(delParam)
-//
-//
-//
-//
-// }
 
 watch(chartList,(newVal)=>{
   let newPromise = new Promise((resolve) => {
@@ -227,5 +297,9 @@ onMounted(()=>{
   width: 100%;
   min-height: 200px;
   height: auto;
+}
+.test{
+  width: 100%;
+  height: 100%;
 }
 </style>

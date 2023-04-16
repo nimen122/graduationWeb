@@ -14,9 +14,23 @@ const getSourceApi = (data) =>{
     })
 }
 
+const getSourceByIdApi = (data) =>{
+    return dataSource.post({
+        url:'/Source/getSourceById',
+        data
+    })
+}
+
 const getChartDataInfoApi = (data) =>{
     return dataSource.post({
         url:'/Source/getChartData',
+        data
+    })
+}
+
+const getDataById = (data) =>{
+    return dataSource.post({
+        url:'/Source/getDataById',
         data
     })
 }
@@ -52,7 +66,9 @@ const errorHandleApi = (data) =>{
 export default {
     getSourceDataApi,
     getSourceApi,
+    getSourceByIdApi,
     getChartDataInfoApi,
+    getDataById,
     addSourceDataApi,
     auditPassApi,
     auditFailApi,

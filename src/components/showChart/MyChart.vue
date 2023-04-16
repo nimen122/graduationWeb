@@ -1,5 +1,6 @@
 <template>
   <div :id="uuid" style="width: 93%;height: 100%" @contextmenu.prevent = "openMenu($event)"></div>
+<!--  <el-button @click="toImage">test</el-button>-->
   <ul
     v-show="menu.isShow"
     :style="{left:menu.left+'px',top:menu.top+'px'}"
@@ -111,6 +112,15 @@ const changeSelect = () => {
   return chartData
 
 }
+
+// const toImage = () => {
+//   // 手动创建一个 canvas 标签
+//   const canvas = document.createElement('canvas')
+//   // 获取父标签，意思是这个标签内的 DOM 元素生成图片
+//   // imageTofile是给截图范围内的父级元素自定义的ref名称
+//   let canvasBox = imageTofile.value
+//
+// }
 
 onBeforeMount(()=>{
   uuid.value ="MyChart"+new Date().getTime()+ Math.random()

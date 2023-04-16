@@ -56,7 +56,6 @@
                     <el-table-column v-for="(item,i) in chartDataName"
                                      :key = "i"
                                      width="auto" :label="item.tableTitle"
-
                     >
                       <template #default="scope" >
                         <div>
@@ -70,21 +69,14 @@
                   </el-table>
                 </div>
               </el-popover>
-
             </template>
           </el-table-column>
           <el-table-column prop="dataState" label="数据状态" width="200" align="center">
             <template #default="scope">
-
-              <el-popover placement="right" trigger="click" :disabled="scope.row.stateMsg === null || scope.row.stateMsg === ''">
-                <template #reference>
-                  <div :class="jutStatus(scope.row.dataState)" @click="showStateMsg">{{scope.row.dataState}}</div>
-                </template>
-                <div>{{ scope.row.stateMsg }}</div>
-              </el-popover>
+              <div :class="jutStatus(scope.row.dataState)" @click="showStateInfo(scope.row)">{{scope.row.dataState}}</div>
             </template>
           </el-table-column>
-          <el-table-column fixed="right" label="Operations" width="350" align="left">
+          <el-table-column fixed="right" label="操作" width="350" align="left">
             <template #default="scope">
               <el-button @click="toChart(scope.$index, scope.row)" type="primary">绘制控制图</el-button>
               <el-button @click="failBtn(scope.$index, scope.row)" v-if="scope.row.dataState !== '异常未处理'" type="danger">上报异常</el-button>
@@ -114,64 +106,216 @@
     </div>
 
   </div>
+
+  <el-dialog v-model = "imgDialogVisible" width="50%">
+    <div style="width: 100%">
+      <el-image  :src="dialogImageUrl" fit="fill" />
+    </div>
+  </el-dialog>
+
+  <el-dialog v-model = "dataStateInfoDialog" width="50%" title="数据状态变更申请">
+    <el-scrollbar max-height="400px">
+      <el-container >
+        <el-row>
+          <el-text>申请理由：</el-text>
+          <el-input
+              autosize
+              type="textarea"
+              :disabled="true"
+              v-model="stateMsg"
+              style="margin-top: 10px;width: 300px"
+
+          >
+          </el-input>
+        </el-row>
+
+      </el-container>
+      <el-container style="margin-top: 15px">
+        <div v-if="currentImages.length !== 0" >
+          <el-text >上传图片（点击图片可大图查看）：</el-text>
+        </div>
+      </el-container>
+      <el-image
+          v-for="url in currentImages"
+          :key="url"
+          :src = "url"
+          style="width: 50%;margin-top: 15px"
+          fit="contain"
+          @click="previewImage(url)"
+      />
+    </el-scrollbar>
+  </el-dialog>
+
   <div v-loading="stateDialogLoading">
     <el-dialog
         title="验证通过"
         v-model="passVisible"
         width="50%"
     >
+      <el-text size="large">申请理由：</el-text>
       <el-input
           v-model="textarea"
           :rows="3"
           type="textarea"
           placeholder="请输入备注"
+          style="margin-top: 10px;margin-bottom: 10px"
       />
+      <el-text size="large" style="margin-top: 20px">上传图片：</el-text>
+      <el-upload
+          ref="imageUpload"
+          action="#"
+          :multiple="true"
+          :file-list="fileDataList"
+          list-type="picture-card"
+          :auto-upload="false"
+          :on-preview="handlePictureCardPreview"
+          :on-remove="handleRemove"
+          :on-change="changeFile"
+          style="margin-top: 10px"
+      >
+        <el-icon><Plus /></el-icon>
+
+        <template #file="{ file }">
+          <div>
+            <img class="el-upload-list__item-thumbnail" :src="file.url" alt="" />
+            <span class="el-upload-list__item-actions">
+          <span
+              class="el-upload-list__item-preview"
+              @click="handlePictureCardPreview(file)"
+          >
+            <el-icon><zoom-in /></el-icon>
+          </span>
+          <span
+              class="el-upload-list__item-delete"
+              @click="handleRemove(file)"
+          >
+            <el-icon><Delete /></el-icon>
+          </span>
+        </span>
+          </div>
+        </template>
+      </el-upload>
       <template #footer>
-    <span class="dialog-footer">
-      <el-button @click="passVisible = false">取 消</el-button>
-      <el-button type="primary" @click="auditPass">确 定</el-button>
-    </span>
+        <span class="dialog-footer">
+          <el-button @click="passVisible = false">取 消</el-button>
+          <el-button type="primary" @click="auditPass">确 定</el-button>
+        </span>
       </template>
     </el-dialog>
   </div>
+
   <div v-loading="stateDialogLoading">
     <el-dialog
       title="上报异常"
       v-model="failVisible"
       width="50%"
   >
-    <el-input
-        v-model="textarea"
-        :rows="3"
-        type="textarea"
-        placeholder="请输入备注"
-    />
-    <template #footer>
-    <span class="dialog-footer">
-      <el-button @click="failVisible = false">取 消</el-button>
-      <el-button type="primary" @click="auditFail">确 定</el-button>
-    </span>
-    </template>
-  </el-dialog>
-  </div>
-  <div v-loading="stateDialogLoading">
-    <el-dialog
-        title="上报异常"
-        v-model="handleVisible"
-        width="50%"
-
-    >
+      <el-text size="large">申请理由：</el-text>
       <el-input
           v-model="textarea"
           :rows="3"
           type="textarea"
           placeholder="请输入备注"
+          style="margin-top: 10px;margin-bottom: 10px"
       />
+      <el-text size="large" style="margin-top: 20px">上传图片：</el-text>
+      <el-upload
+          ref="imageUpload"
+          action="#"
+          :multiple="true"
+          :file-list="fileDataList"
+          list-type="picture-card"
+          :auto-upload="false"
+          :on-preview="handlePictureCardPreview"
+          :on-remove="handleRemove"
+          :on-change="changeFile"
+          style="margin-top: 10px"
+      >
+        <el-icon><Plus /></el-icon>
+
+        <template #file="{ file }">
+          <div>
+            <img class="el-upload-list__item-thumbnail" :src="file.url" alt="" />
+            <span class="el-upload-list__item-actions">
+          <span
+              class="el-upload-list__item-preview"
+              @click="handlePictureCardPreview(file)"
+          >
+            <el-icon><zoom-in /></el-icon>
+          </span>
+          <span
+              class="el-upload-list__item-delete"
+              @click="handleRemove(file)"
+          >
+            <el-icon><Delete /></el-icon>
+          </span>
+        </span>
+          </div>
+        </template>
+      </el-upload>
       <template #footer>
-    <span class="dialog-footer">
-      <el-button @click="handleVisible = false">取 消</el-button>
-      <el-button type="primary" @click="handleError">确 定</el-button>
-    </span>
+        <span class="dialog-footer">
+          <el-button @click="failVisible = false">取 消</el-button>
+          <el-button type="primary" @click="auditFail">确 定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+  </div>
+
+  <div v-loading="stateDialogLoading">
+    <el-dialog
+        title="异常处理"
+        v-model="handleVisible"
+        width="50%"
+    >
+      <el-text size="large">处理方法：</el-text>
+      <el-input
+          v-model="textarea"
+          :rows="3"
+          type="textarea"
+          placeholder="请输入备注"
+          style="margin-top: 10px;margin-bottom: 10px"
+      />
+      <el-text size="large" style="margin-top: 20px">上传图片：</el-text>
+      <el-upload
+          ref="imageUpload"
+          action="#"
+          :multiple="true"
+          :file-list="fileDataList"
+          list-type="picture-card"
+          :auto-upload="false"
+          :on-preview="handlePictureCardPreview"
+          :on-remove="handleRemove"
+          :on-change="changeFile"
+          style="margin-top: 10px"
+      >
+        <el-icon><Plus /></el-icon>
+
+        <template #file="{ file }">
+          <div>
+            <img class="el-upload-list__item-thumbnail" :src="file.url" alt="" />
+            <span class="el-upload-list__item-actions">
+          <span
+              class="el-upload-list__item-preview"
+              @click="handlePictureCardPreview(file)"
+          >
+            <el-icon><zoom-in /></el-icon>
+          </span>
+          <span
+              class="el-upload-list__item-delete"
+              @click="handleRemove(file)"
+          >
+            <el-icon><Delete /></el-icon>
+          </span>
+        </span>
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="handleVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleError">确 定</el-button>
+        </span>
       </template>
     </el-dialog>
   </div>
@@ -180,13 +324,16 @@
 
 <script setup>
 import message from "../../utils/Message.js";
-import {Search } from '@element-plus/icons-vue'
+import {Search,Delete, Download, Plus, ZoomIn } from '@element-plus/icons-vue'
+// import { UploadFile } from 'element-plus'
 import api from '@/api/dataSource.js'
+import uploadApi from '@/api/upload.js'
 import {onMounted, reactive, ref} from "vue";
 import DataImportForm from "./DataImportForm.vue";
 import { storeToRefs } from 'pinia'
 import { toSPC } from "@/store/toSPC.js";
 import { user } from '@/store/user.js'
+import axios from "axios";
 const router = useRouter()
 const toSPCStore = toSPC();
 const userStore = user()
@@ -253,9 +400,51 @@ const total = ref(0)
 const textarea = ref('')
 
 const currentUser = ref()
+// const imageUpload = ref(null)
+const dialogImageUrl = ref('')
+const imgDialogVisible = ref(false)
+const fileDataList = ref([])
 
-const showStateMsg = () => {
-  stateMsgDialog.value = true
+const stateMsg = ref('')
+
+const currentImages = ref([])
+
+const dataStateInfoDialog = ref(false)
+
+const changeFile = (file,fileList) => {
+  fileDataList.value = fileList
+}
+
+const handleRemove = (file) => {
+  let removeId = file.id
+  fileDataList.value.forEach((item, index) => {
+    if (item.id === removeId) {
+      fileDataList.value.splice(index, 1)
+    }
+  })
+  console.log(fileDataList.value)
+}
+
+const handlePictureCardPreview = (file) => {
+  dialogImageUrl.value = URL.createObjectURL(file.raw)
+  imgDialogVisible.value = true
+}
+
+const previewImage = (url) => {
+  dialogImageUrl.value = url
+  imgDialogVisible.value = true
+}
+
+// const handleDownload = (file: UploadFile) => {
+//   console.log(file)
+// }
+
+const showStateInfo = (row) => {
+  stateMsg.value = row.stateMsg
+  currentImages.value = row.stateImage
+  if (row.dataState !== "未进行验证"){
+    dataStateInfoDialog.value = true
+  }
 }
 
 const handleSizeChange = (val) => {
@@ -379,6 +568,8 @@ const showDataInfo = (index,row) => {
       // console.log(tableData.value[0][2])
     }
   }).catch(error =>{
+    dataInfoLoading.value = false
+    message.error("请求超时，请重试")
     console.log(error)
   })
 }
@@ -455,54 +646,129 @@ const toChart = (index,row) =>{
 
 const passBtn = (index,row) => {
   textarea.value = ''
+  dialogImageUrl.value =''
+  fileDataList.value = []
   passVisible.value = true
   currentRow.value  = row
 }
 
 const failBtn = (index,row) => {
   textarea.value = ''
+  dialogImageUrl.value =''
+  fileDataList.value = []
   failVisible.value = true
   currentRow.value  = row
 }
 
 const handleErrorBtn = (index,row) => {
   textarea.value = ''
+  dialogImageUrl.value =''
+  fileDataList.value = []
   handleVisible.value = true
   currentRow.value  = row
 }
 
 const auditPass = () => {
-  // console.log(textarea.value)
   stateDialogLoading.value = true
-  passVisible.value = false
-  let data = {sourceId:currentRow.value.sourceId,stateMsg:textarea.value}
+
+  let stateImage = ''
+  if (fileDataList.value.length>0){
+    const formData = new FormData()
+    for (let i = 0;i<fileDataList.value.length;i++){
+
+      let fileType = fileDataList.value[i].name.substring(fileDataList.value[i].name.lastIndexOf('.')+1)
+      if (fileType !== 'jpg' && fileType !== 'png' && fileType !== 'jpeg'){
+        message.error("图片类型非法")
+        return
+      }
+      let filename = currentUser.value.userAccount+getNowTime()+Math.random()+'.'+fileType
+      formData.append('fileList',fileDataList.value[i].raw)
+      formData.append('filePath',filename)
+      //每个文件名以':'分割，因为文件名中不能有英文冒号，不会冲突
+      stateImage += filename+':'
+    }
+    stateImage = stateImage.slice(0,stateImage.length-1)
+    let options = ({
+      url:'http://localhost:8888/Upload/upload',
+      method:'post',
+      data:formData,
+    })
+    axios(options).then((res) => {
+      // console.log(res)
+      // if (res.success){
+      //   // message.sucess("图片上传成功")
+      // }
+    }).catch( error => {
+      console.log(error)
+      message.error("图片上传失败")
+    })
+  }
+
+  let data = {sourceId:currentRow.value.sourceId,stateMsg:textarea.value,stateImage:stateImage}
   api.auditPassApi(data).then( res => {
     console.log(res.data)
     message.sucess("操作成功")
     stateDialogLoading.value = false
+    passVisible.value = false
     getSourceData()
   }).catch( error =>{
     stateDialogLoading.value = false
+    passVisible.value = false
     message.error("请求超时,请重试")
     console.log(error)
   })
-  // console.log(currentRow.value)
+
 }
 
 const auditFail = () => {
 
   stateDialogLoading.value = true
-  failVisible.value = false
-  let data = {sourceId:currentRow.value.sourceId,stateMsg:textarea.value}
-  api.auditFailApi(data).then( res => {
 
+  let stateImage = ''
+  if (fileDataList.value.length>0){
+    const formData = new FormData()
+    for (let i = 0;i<fileDataList.value.length;i++){
+
+      let fileType = fileDataList.value[i].name.substring(fileDataList.value[i].name.lastIndexOf('.')+1)
+      if (fileType !== 'jpg' && fileType !== 'png' && fileType !== 'jpeg'){
+        message.error("图片类型非法")
+        return
+      }
+      let filename = currentUser.value.userAccount+getNowTime()+Math.random()+'.'+fileType
+      formData.append('fileList',fileDataList.value[i].raw)
+      formData.append('filePath',filename)
+      //每个文件名以':'分割，因为文件名中不能有英文冒号，不会冲突
+      stateImage += filename+':'
+    }
+    stateImage = stateImage.slice(0,stateImage.length-1)
+    let options = ({
+      url:'http://localhost:8888/Upload/upload',
+      method:'post',
+      data:formData,
+    })
+    axios(options).then((res) => {
+      // console.log(res)
+      // if (res.success){
+      //   // message.sucess("图片上传成功")
+      // }
+    }).catch( error => {
+      console.log(error)
+      message.error("图片上传失败")
+    })
+  }
+
+  let data = {sourceId:currentRow.value.sourceId,stateMsg:textarea.value,stateImage:stateImage}
+  api.auditFailApi(data).then( res => {
     message.sucess("操作成功")
+    failVisible.value = false
     stateDialogLoading.value = false
     getSourceData()
   }).catch( error =>{
     stateDialogLoading.value = false
+    failVisible.value = false
     message.error("请求超时,请重试")
     console.log(error)
+
   })
   // console.log(currentRow.value)
 }
@@ -510,21 +776,79 @@ const auditFail = () => {
 const handleError = () => {
   // console.log(textarea.value)
   stateDialogLoading.value = true
-  handleVisible.value = false
-  let data = {sourceId:currentRow.value.sourceId,stateMsg:textarea.value}
+  let stateImage = ''
+  if (fileDataList.value.length>0){
+    const formData = new FormData()
+    for (let i = 0;i<fileDataList.value.length;i++){
+
+      let fileType = fileDataList.value[i].name.substring(fileDataList.value[i].name.lastIndexOf('.')+1)
+      if (fileType !== 'jpg' && fileType !== 'png' && fileType !== 'jpeg'){
+        message.error("图片类型非法")
+        return
+      }
+      let filename = currentUser.value.userAccount+getNowTime()+Math.random()+'.'+fileType
+      formData.append('fileList',fileDataList.value[i].raw)
+      formData.append('filePath',filename)
+      //每个文件名以':'分割，因为文件名中不能有英文冒号，不会冲突
+      stateImage += filename+':'
+    }
+    stateImage = stateImage.slice(0,stateImage.length-1)
+    let options = ({
+      url:'http://localhost:8888/Upload/upload',
+      method:'post',
+      data:formData,
+    })
+    axios(options).then((res) => {
+      // console.log(res)
+      // if (res.success){
+      //   // message.sucess("图片上传成功")
+      // }
+    }).catch( error => {
+      console.log(error)
+      message.error("图片上传失败")
+    })
+  }
+
+  let data = {sourceId:currentRow.value.sourceId,stateMsg:textarea.value,stateImage:stateImage}
   api.errorHandleApi(data).then( res => {
     console.log(res.data)
     message.sucess("操作成功")
     stateDialogLoading.value = false
+    handleVisible.value = false
     getSourceData()
   }).catch( error =>{
     stateDialogLoading.value = false
+    handleVisible.value = false
     message.error("请求超时,请重试")
     console.log(error)
   })
   // console.log(currentRow.value)
 }
-
+/*获取当前时间，为图片提供名称 */
+const getNowTime = () => {
+  const yy = new Date().getFullYear()
+  const MM =
+      new Date().getMonth() + 1 < 10
+          ? '0' + (new Date().getMonth() + 1)
+          : new Date().getMonth() + 1
+  const dd =
+      new Date().getDate() < 10
+          ? '0' + new Date().getDate()
+          : new Date().getDate()
+  const HH =
+      new Date().getHours() < 10
+          ? '0' + new Date().getHours()
+          : new Date().getHours()
+  const mm =
+      new Date().getMinutes() < 10
+          ? '0' + new Date().getMinutes()
+          : new Date().getMinutes()
+  const ss =
+      new Date().getSeconds() < 10
+          ? '0' + new Date().getSeconds()
+          : new Date().getSeconds()
+  return yy + MM + dd + '-' + HH + mm + ss
+}
 
 onMounted(()=>{
   dataState.value = options.value[0].value

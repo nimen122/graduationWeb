@@ -29,7 +29,7 @@
           <el-table-column fixed="right" label="操作" width="350" align="center">
             <template #default="scope">
               <el-button @click="updateUser(scope.$index, scope.row)" type="primary" :disabled="notOperation(scope.row)">修改用户信息</el-button>
-              <el-button @click="toChart(scope.$index, scope.row)" type="danger" :disabled="notOperation(scope.row)">注销账号</el-button>
+<!--              <el-button @click="delUser(scope.$index, scope.row)" type="danger" :disabled="notOperation(scope.row)">注销账号</el-button>-->
             </template>
           </el-table-column>
         </el-table>
@@ -196,6 +196,10 @@ const notOperation = (user) => {
       return true
     }
   }
+}
+
+const delUser = () => {
+
 }
 
 // const getUser = () => {
